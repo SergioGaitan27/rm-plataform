@@ -57,6 +57,14 @@ const Dashboard = () => {
     router.push('/login');
   };
 
+  const routeMap: { [key: string]: string } = {
+    'Créditos': 'creditos',
+    'Catálogo': 'catalogo',
+    'Administración': 'administracion',
+    'Configuración': 'configuracion',
+    'Punto de venta': 'punto-de-venta'
+  };
+
   return (
     <div className="min-h-screen bg-black text-yellow-400 p-4">
       <div className="max-w-md mx-auto">
@@ -94,7 +102,7 @@ const Dashboard = () => {
         <div className="grid grid-cols-2 gap-4">
           {userCategories.map((category, index) => (
             <Link 
-              href={`/dashboard/${category.name.toLowerCase().replace(' ', '-')}`} 
+              href={`/${routeMap[category.name]}`} 
               key={index}
               className="bg-gray-900 p-4 rounded-lg text-center hover:bg-gray-800 transition-colors shadow-md flex flex-col items-center justify-center"
             >
