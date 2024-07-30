@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { FaDoorOpen } from 'react-icons/fa';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 type Category = {
   name: string;
@@ -36,9 +37,7 @@ const Dashboard = () => {
   }, []);
 
   if (status === 'loading' || loading) {
-    return <div className="flex items-center justify-center h-screen bg-black">
-      <p className="text-yellow-400 text-xl">Cargando...</p>
-    </div>;
+    return <LoadingSpinner />;
   }
 
   if (status === 'unauthenticated' || !session) {

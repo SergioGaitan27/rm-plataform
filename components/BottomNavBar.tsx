@@ -1,8 +1,6 @@
 'use client';
 
-import { useSession } from 'next-auth/react';
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
 
 type Category = {
   name: string;
@@ -10,41 +8,11 @@ type Category = {
   icon: string;
 };
 
-const BottomNavBar = () => {
-  const { data: session, status } = useSession();
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
+type BottomNavBarProps = {
+  categories: Category[];
+};
 
-  useEffect(() => {
-    const fetchCategories = async () => {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setCategories([
-        { name: 'Punto de venta', allowedRoles: ['vendedor'], icon: '💰' },
-        { name: 'Créditos', allowedRoles: ['super_administrador', 'administrador'], icon: '💳' },
-        { name: 'Catálogo', allowedRoles: ['super_administrador', 'administrador'], icon: '📚' },
-        { name: 'Administración', allowedRoles: ['super_administrador', 'administrador'], icon: '⚙️' },
-        { name: 'Configuración', allowedRoles: ['super_administrador', 'administrador'], icon: '🔧' },
-      ]);
-      setLoading(false);
-    };
-
-    fetchCategories();
-  }, []);
-
-  if (status === 'loading' || loading) {
-    return null;
-  }
-
-  if (status === 'unauthenticated' || !session) {
-    return null;
-  }
-
-  const userRole = session.user?.role;
-
-  const userCategories = categories.filter(category =>
-    category.allowedRoles.includes(userRole as string)
-  );
-
+const BottomNavBar = ({ categories }: BottomNavBarProps) => {
   const routeMap: { [key: string]: string } = {
     'Créditos': 'creditos',
     'Catálogo': 'catalogo',
@@ -56,7 +24,7 @@ const BottomNavBar = () => {
   return (
     <nav className="bg-gray-900 p-4 fixed bottom-0 left-0 right-0 shadow-md">
       <div className="flex justify-around">
-        {userCategories.map((category, index) => (
+        {categories.map((category, index) => (
           <Link
             href={`/${routeMap[category.name]}`}
             key={index}
