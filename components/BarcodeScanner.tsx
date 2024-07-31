@@ -25,13 +25,14 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan }) => {
           },
           locator: {
             patchSize: "medium",
-            halfSample: true
+            halfSample: true,
           },
           numOfWorkers: navigator.hardwareConcurrency,
           decoder: {
             readers: ['ean_reader', 'ean_8_reader', 'code_128_reader', 'code_39_reader', 'code_39_vin_reader', 'codabar_reader', 'upc_reader', 'upc_e_reader', 'i2of5_reader'],
           },
           locate: true,
+          frequency: 10, // Increase scan frequency for faster scanning
         },
         (err) => {
           if (err) {
@@ -55,5 +56,12 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan }) => {
     };
   }, [onScan]);
 
-  return <div ref={scannerRef} className="scanner-container" />;
+  return (
+    <div className="scanner-container">
+      <div ref={scannerRef} className="scanner" />
+      <div className="overlay">
+        <div className="overlay-inner" />
+      </div>
+    </div>
+  );
 };
