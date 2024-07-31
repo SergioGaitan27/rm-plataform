@@ -40,8 +40,10 @@ const ProductCatalog: React.FC = () => {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -76,6 +78,15 @@ const ProductCatalog: React.FC = () => {
     }
   }, [status]);
 
+  useEffect(() => {
+    const filtered = products.filter(product => 
+      product.boxCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.productCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredProducts(filtered);
+  }, [searchTerm, products]);
+
   if (status === 'loading' || loading) {
     return <LoadingSpinner />;
   }
@@ -94,12 +105,20 @@ const ProductCatalog: React.FC = () => {
     <div className="min-h-screen bg-black text-yellow-400 flex flex-col justify-between">
       <div className="p-4">
         <div className="bg-gray-900 rounded-lg p-4 mb-6 shadow-md">
-          <h1 className="text-3xl font-bold text-center">Catálogo de Productos</h1>
+          <h1 className="text-3xl font-bold text-center">Catálogo</h1>
         </div>
 
         <div className="bg-gray-900 rounded-lg p-4 mb-6 shadow-md">
+          <input
+            type="text"
+            placeholder="Buscar por código de caja, código de producto o nombre"
+            className="w-full p-2 mb-4 bg-gray-800 text-yellow-400 rounded"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {products.map((product) => (
+            {filteredProducts.map((product) => (
               <div key={product._id} className="bg-gray-800 p-4 rounded-lg shadow">
                 {product.imageUrl && (
                   <div className="relative w-full h-48 mb-2">
@@ -112,25 +131,26 @@ const ProductCatalog: React.FC = () => {
                     />
                   </div>
                 )}
-                <h2 className="text-lg font-semibold">{product.name}</h2>
-                <p><strong>Código de caja:</strong> {product.boxCode}</p>
-                <p><strong>Código de producto:</strong> {product.productCode}</p>
-                <p><strong>Piezas por caja:</strong> {product.piecesPerBox}</p>
-                <p><strong>Costo:</strong> ${product.cost.toFixed(2)}</p>
-                <p><strong>Precio menudeo:</strong> ${product.price1.toFixed(2)} | A partir de: {product.price1MinQty}</p>
-                <p><strong>Precio mayoreo:</strong> ${product.price2.toFixed(2)} | A partir de: {product.price2MinQty}</p>
-                <p><strong>Precio caja:</strong> ${product.price3.toFixed(2)} | A partir de: {product.price3MinQty}</p>
-                {product.price4 && <p><strong>Precio 4:</strong> ${product.price4.toFixed(2)}</p>}
-                {product.price5 && <p><strong>Precio 5:</strong> ${product.price5.toFixed(2)}</p>}
-                <h3 className="mt-2 font-semibold">Stock:</h3>
-                <ul>
+                <h2 className="text-xl font-bold mb-2">{product.name}</h2>
+                <div className="space-y-1 text-sm">
+                  <p><span className="font-semibold">Código de caja:</span> {product.boxCode}</p>
+                  <p><span className="font-semibold">Código de producto:</span> {product.productCode}</p>
+                  <p><span className="font-semibold">Piezas por caja:</span> {product.piecesPerBox}</p>
+                  <p><span className="font-semibold">Costo:</span> ${product.cost.toFixed(2)}</p>
+                </div>
+                <div className="mt-3">
+                  <p className="font-semibold">Precios:</p>
+                  <p>Menudeo: ${product.price1.toFixed(2)} (min. {product.price1MinQty})</p>
+                  <p>Mayoreo: ${product.price2.toFixed(2)} (min. {product.price2MinQty})</p>
+                  <p>Caja: ${product.price3.toFixed(2)} (min. {product.price3MinQty})</p>
+                </div>
+                <div className="mt-3">
+                  <p className="font-semibold">Inventario:</p>
                   {product.stockLocations.map((location, index) => (
-                    <li key={index}>
-                      <strong>{location.location}:</strong> {location.quantity}
-                    </li>
+                    <p key={index}>{location.location}: {location.quantity}</p>
                   ))}
-                </ul>
-                <Link href={`/administracion/productos/${product._id}`} className="text-yellow-400 hover:text-yellow-300 mt-2 inline-block">
+                </div>
+                <Link href={`/administracion/productos/${product._id}`} className="mt-3 block text-center bg-yellow-400 text-black py-2 rounded hover:bg-yellow-300 transition-colors duration-300">
                   Ver detalles
                 </Link>
               </div>
