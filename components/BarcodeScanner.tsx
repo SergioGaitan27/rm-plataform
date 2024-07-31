@@ -144,6 +144,43 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan }) => {
     await applyTorchState();
   };
 
+  const focusCamera = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const stream = scannerRef.current?.querySelector('video')?.srcObject as MediaStream;
+    if (stream) {
+      const track = stream.getVideoTracks()[0];
+      const capabilities = track.getCapabilities();
+      
+      const constraints: MediaTrackConstraints = {};
+      
+      if ('focusMode' in capabilities) {
+        constraints.focusMode = 'auto';
+      }
+      
+      if (Object.keys(constraints).length > 0) {
+        try {
+          await track.applyConstraints(constraints);
+          console.log('Enfoque automático aplicado');
+          
+          // Volver a modo manual después de un corto delay
+          setTimeout(async () => {
+            try {
+              await track.applyConstraints({ focusMode: 'manual' });
+              console.log('Volviendo a modo de enfoque manual');
+            } catch (error) {
+              console.error('Error al volver a modo de enfoque manual:', error);
+            }
+          }, 1000); // Espera 1 segundo antes de volver a modo manual
+        } catch (error) {
+          console.error('Error al aplicar enfoque automático:', error);
+        }
+      } else {
+        console.log('Las capacidades de enfoque no están disponibles en este dispositivo.');
+      }
+    }
+  };
+
   const handleClick = async (e: React.MouseEvent) => {
     e.preventDefault();
     const stream = scannerRef.current?.querySelector('video')?.srcObject as MediaStream;
@@ -174,17 +211,25 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan }) => {
   };
 
   return (
-    <div className="scanner-container" onClick={handleClick}>
+    <div className="scanner-container">
       <div ref={scannerRef} className="scanner" />
       <div className="overlay">
         <div className="overlay-inner" />
       </div>
-      <button
-        onClick={toggleTorch}
-        className="torch-button"
-      >
-        {torch ? 'Apagar Linterna' : 'Encender Linterna'}
-      </button>
+      <div className="button-container">
+        <button
+          onClick={toggleTorch}
+          className="scanner-button torch-button"
+        >
+          {torch ? 'Apagar Linterna' : 'Encender Linterna'}
+        </button>
+        <button
+          onClick={focusCamera}
+          className="scanner-button focus-button"
+        >
+          Enfocar
+        </button>
+      </div>
     </div>
   );
 };

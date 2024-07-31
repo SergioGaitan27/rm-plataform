@@ -12,6 +12,35 @@
     justify-content: center;
     align-items: center;
     overflow: hidden; /* Asegura que el contenido adicional se oculte */
+    position: relative;
+}
+
+.button-container {
+    position: absolute;
+    bottom: 20px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.scanner-button {
+    background-color: rgba(255, 255, 0, 0.7);
+    color: black;
+    padding: 10px 20px;
+    border-radius: 20px;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.scanner-button:hover {
+    background-color: rgba(255, 255, 0, 0.9);
+}
+
+.scanner-button:active {
+    background-color: rgba(255, 255, 0, 1);
 }
 
 .scanner-container .scanner {
