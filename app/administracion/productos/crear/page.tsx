@@ -114,7 +114,7 @@ const CreateProductPage: React.FC = () => {
   };
 
   const handleBarcodeScanned = (barcode: string) => {
-    setProduct(prev => ({ ...prev, productCode: barcode }));
+    setProduct({ ...product, productCode: barcode });
     setShowBarcodeScanner(false);
   };
 
@@ -230,12 +230,7 @@ const CreateProductPage: React.FC = () => {
                   Escanear
                 </button>
               </div>
-              {showBarcodeScanner && (
-                <BarcodeScanner 
-                  onScan={handleBarcodeScanned}
-                  onClose={() => setShowBarcodeScanner(false)}
-                />
-              )}
+              {showBarcodeScanner && <BarcodeScanner onScan={handleBarcodeScanned} />}
               <input
                 type="text"
                 name="name"
