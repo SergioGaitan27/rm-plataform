@@ -12,15 +12,15 @@
     justify-content: center;
     align-items: center;
     overflow: hidden; /* Asegura que el contenido adicional se oculte */
-  }
-  
-  .scanner-container .scanner {
+}
+
+.scanner-container .scanner {
     width: 100%;
     height: 100%;
     position: absolute;
-  }
-  
-  .scanner-container .overlay {
+}
+
+.scanner-container .overlay {
     position: absolute;
     top: 0;
     left: 0;
@@ -30,12 +30,36 @@
     justify-content: center;
     align-items: center;
     pointer-events: none;
-  }
-  
-  .scanner-container .overlay .overlay-inner {
+}
+
+.scanner-container .overlay .overlay-inner {
     width: 90%;
     height: 40%; /* Ajusta esta altura para hacer la superposición más rectangular */
     border: 2px solid red; /* El color y grosor del borde de la superposición */
     box-sizing: border-box;
     background-color: rgba(255, 255, 255, 0.2); /* Fondo semitransparente */
-  }
+}
+
+/* Nuevos estilos para el botón de la linterna */
+.torch-button {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(255, 255, 0, 0.7); /* Fondo amarillo semi-transparente */
+    color: black;
+    padding: 10px 20px;
+    border-radius: 20px;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+    z-index: 10; /* Asegura que el botón esté por encima de otros elementos */
+}
+
+.torch-button:hover {
+    background-color: rgba(255, 255, 0, 0.9); /* Amarillo más opaco al pasar el mouse */
+}
+
+.torch-button:active {
+    background-color: rgba(255, 255, 0, 1); /* Amarillo sólido al presionar */
+}

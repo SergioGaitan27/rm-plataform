@@ -1,5 +1,5 @@
 // components/BarcodeScanner.tsx
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Quagga from 'quagga';
 
 interface BarcodeScannerProps {
@@ -29,6 +29,7 @@ interface ProcessedResult {
 
 export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan }) => {
   const scannerRef = useRef<HTMLDivElement>(null);
+  const [torch, setTorch] = useState(false);
 
   useEffect(() => {
     if (scannerRef.current) {
@@ -41,7 +42,8 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan }) => {
             constraints: {
               width: { ideal: 640 },
               height: { ideal: 480 },
-              facingMode: 'environment', // Use the rear camera
+              facingMode: 'environment',
+              advanced: [{ torch: torch }]
             },
           },
           locator: {
@@ -63,12 +65,12 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan }) => {
             ],
           },
           locate: true,
-          frequency: 10, // Increase scan frequency for faster scanning
+          frequency: 10,
           area: {
-            top: "20%",    // top offset
-            right: "20%",  // right offset
-            left: "20%",   // left offset
-            bottom: "20%"  // bottom offset
+            top: "20%",
+            right: "20%",
+            left: "20%",
+            bottom: "20%"
           }
         },
         (err) => {
@@ -115,13 +117,33 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan }) => {
     return () => {
       Quagga.stop();
     };
-  }, [onScan]);
+  }, [onScan, torch]);
+
+  const toggleTorch = async () => {
+    const stream = scannerRef.current?.querySelector('video')?.srcObject as MediaStream;
+    if (stream) {
+      const track = stream.getVideoTracks()[0];
+      const capabilities = track.getCapabilities();
+      if (capabilities.torch) {
+        try {
+          await track.applyConstraints({
+            advanced: [{ torch: !torch }]
+          });
+          setTorch(!torch);
+        } catch (err) {
+          console.error('Error toggling torch:', err);
+        }
+      } else {
+        console.log('Torch is not supported on this device');
+      }
+    }
+  };
 
   const handleClick = async () => {
     const stream = scannerRef.current?.querySelector('video')?.srcObject as MediaStream;
     if (stream) {
       const track = stream.getVideoTracks()[0];
-      const capabilities = track.getCapabilities();
+      const capabilities = track.getCapabilities() as any;
       
       const constraints: MediaTrackConstraints = {};
       
@@ -132,7 +154,7 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan }) => {
       if ('focusDistance' in capabilities && capabilities.focusDistance) {
         constraints.focusDistance = capabilities.focusDistance.min;
       }
-  
+
       if (Object.keys(constraints).length > 0) {
         try {
           await track.applyConstraints(constraints);
@@ -144,7 +166,6 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan }) => {
       }
     }
   };
-  
 
   return (
     <div className="scanner-container" onClick={handleClick}>
@@ -152,6 +173,12 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan }) => {
       <div className="overlay">
         <div className="overlay-inner" />
       </div>
+      <button
+        onClick={toggleTorch}
+        className="torch-button"
+      >
+        {torch ? 'Apagar Linterna' : 'Encender Linterna'}
+      </button>
     </div>
   );
 };
