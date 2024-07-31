@@ -6,6 +6,27 @@ interface BarcodeScannerProps {
   onScan: (barcode: string) => void;
 }
 
+interface Point {
+  x: number;
+  y: number;
+}
+
+interface Box {
+  x: number;
+  y: number;
+}
+
+interface CodeResult {
+  code: string;
+}
+
+interface ProcessedResult {
+  boxes: Point[][] | undefined;
+  box: Point[] | undefined;
+  codeResult: CodeResult | undefined;
+  line: Point[] | undefined;
+}
+
 export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan }) => {
   const scannerRef = useRef<HTMLDivElement>(null);
 
@@ -21,10 +42,9 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan }) => {
               width: { ideal: 640 },
               height: { ideal: 480 },
               facingMode: 'environment', // Use the rear camera
-              focusMode: 'continuous', // Continuous focus
               advanced: [{
                 focusMode: 'continuous',
-                focusDistance: { ideal: 0.1 } // Try to set focus distance for close objects
+                focusDistance: { ideal: 0.1 } // Attempt to set focus distance for close objects
               }]
             },
           },
@@ -34,7 +54,17 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan }) => {
           },
           numOfWorkers: navigator.hardwareConcurrency,
           decoder: {
-            readers: ['ean_reader', 'ean_8_reader', 'code_128_reader', 'code_39_reader', 'code_39_vin_reader', 'codabar_reader', 'upc_reader', 'upc_e_reader', 'i2of5_reader'],
+            readers: [
+              'ean_reader', 
+              'ean_8_reader', 
+              'code_128_reader', 
+              'code_39_reader', 
+              'code_39_vin_reader', 
+              'codabar_reader', 
+              'upc_reader', 
+              'upc_e_reader', 
+              'i2of5_reader'
+            ],
           },
           locate: true,
           frequency: 10, // Increase scan frequency for faster scanning
@@ -58,6 +88,30 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan }) => {
         if (result.codeResult.code) {
           onScan(result.codeResult.code);
           Quagga.stop();
+        }
+      });
+
+      Quagga.onProcessed((result: ProcessedResult) => {
+        const drawingCtx = Quagga.canvas.ctx.overlay;
+        const drawingCanvas = Quagga.canvas.dom.overlay;
+
+        if (result) {
+          if (result.boxes) {
+            drawingCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
+            result.boxes.filter((box) => box !== result.box).forEach((box: Point[]) => {
+              Quagga.ImageDebug.drawPath(box, { x: 0, y: 1 }, drawingCtx, { color: 'green', lineWidth: 2 });
+            });
+          }
+
+          if (result.box) {
+            Quagga.ImageDebug.drawPath(result.box, { x: 0, y: 1 }, drawingCtx, { color: 'blue', lineWidth: 2 });
+          }
+
+          if (result.codeResult && result.codeResult.code) {
+            if (result.line) {
+              Quagga.ImageDebug.drawPath(result.line, { x: 0, y: 1 }, drawingCtx, { color: 'red', lineWidth: 3 });
+            }
+          }
         }
       });
     }
