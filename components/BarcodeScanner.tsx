@@ -42,10 +42,6 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan }) => {
               width: { ideal: 640 },
               height: { ideal: 480 },
               facingMode: 'environment', // Use the rear camera
-              advanced: [{
-                focusMode: 'continuous',
-                focusDistance: { ideal: 0.1 } // Attempt to set focus distance for close objects
-              }]
             },
           },
           locator: {
@@ -121,8 +117,37 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan }) => {
     };
   }, [onScan]);
 
+  const handleClick = async () => {
+    const stream = scannerRef.current?.querySelector('video')?.srcObject as MediaStream;
+    if (stream) {
+      const track = stream.getVideoTracks()[0];
+      const capabilities = track.getCapabilities();
+      
+      const constraints: MediaTrackConstraints = {};
+      
+      if ('focusMode' in capabilities) {
+        constraints.focusMode = 'manual';
+      }
+      
+      if ('focusDistance' in capabilities && capabilities.focusDistance) {
+        constraints.focusDistance = capabilities.focusDistance.min;
+      }
+  
+      if (Object.keys(constraints).length > 0) {
+        try {
+          await track.applyConstraints(constraints);
+        } catch (error) {
+          console.error('Error applying focus constraints:', error);
+        }
+      } else {
+        console.log('Focus capabilities are not available on this device.');
+      }
+    }
+  };
+  
+
   return (
-    <div className="scanner-container">
+    <div className="scanner-container" onClick={handleClick}>
       <div ref={scannerRef} className="scanner" />
       <div className="overlay">
         <div className="overlay-inner" />
