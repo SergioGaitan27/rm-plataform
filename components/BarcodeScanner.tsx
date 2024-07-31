@@ -23,9 +23,15 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan }) => {
               facingMode: 'environment', // use the rear camera
             },
           },
+          locator: {
+            patchSize: "medium",
+            halfSample: true
+          },
+          numOfWorkers: navigator.hardwareConcurrency,
           decoder: {
             readers: ['ean_reader', 'ean_8_reader', 'code_128_reader', 'code_39_reader', 'code_39_vin_reader', 'codabar_reader', 'upc_reader', 'upc_e_reader', 'i2of5_reader'],
           },
+          locate: true,
         },
         (err) => {
           if (err) {
@@ -51,4 +57,3 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan }) => {
 
   return <div ref={scannerRef} className="scanner-container" />;
 };
-

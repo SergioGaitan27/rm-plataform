@@ -15,6 +15,10 @@
   }
   
   .scanner-container video {
-    width: 100%;
-    height: auto; /* Mantiene la relación de aspecto del video */
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: auto;
+    height: 100%;
   }

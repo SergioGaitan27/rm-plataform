@@ -231,7 +231,7 @@ const CreateProductPage: React.FC = () => {
                 </button>
               </div>
               <div className="space-y-2">
-              {showBarcodeScanner && <BarcodeScanner onScan={handleBarcodeScanned} />}
+                {showBarcodeScanner && <BarcodeScanner onScan={handleBarcodeScanned} />}
               </div>
               <input
                 type="text"
