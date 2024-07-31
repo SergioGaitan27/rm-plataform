@@ -25,6 +25,24 @@ interface ProcessedResult {
 export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan }) => {
   const scannerRef = useRef<HTMLDivElement>(null);
   const [torch, setTorch] = useState(false);
+  const torchRef = useRef(false);
+
+  const applyTorchState = useCallback(async () => {
+    const stream = scannerRef.current?.querySelector('video')?.srcObject as MediaStream;
+    if (stream) {
+      const track = stream.getVideoTracks()[0];
+      const capabilities = track.getCapabilities();
+      if (capabilities.torch) {
+        try {
+          await track.applyConstraints({
+            advanced: [{ torch: torchRef.current }]
+          });
+        } catch (err) {
+          console.error('Error applying torch state:', err);
+        }
+      }
+    }
+  }, []);
 
   const initializeScanner = useCallback(() => {
     if (scannerRef.current) {
@@ -38,7 +56,6 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan }) => {
               width: { ideal: 640 },
               height: { ideal: 480 },
               facingMode: 'environment',
-              advanced: [{ torch }]
             },
           },
           locator: {
@@ -74,6 +91,7 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan }) => {
             return;
           }
           Quagga.start();
+          applyTorchState();
         }
       );
 
@@ -108,7 +126,7 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan }) => {
         }
       });
     }
-  }, [onScan, torch]);
+  }, [onScan, applyTorchState]);
 
   useEffect(() => {
     initializeScanner();
@@ -119,30 +137,15 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan }) => {
   }, [initializeScanner]);
 
   const toggleTorch = async (e: React.MouseEvent) => {
-    e.stopPropagation(); // Evita la propagación del evento
-    const stream = scannerRef.current?.querySelector('video')?.srcObject as MediaStream;
-    if (stream) {
-      const track = stream.getVideoTracks()[0];
-      const capabilities = track.getCapabilities();
-      if (capabilities.torch) {
-        try {
-          await track.applyConstraints({
-            advanced: [{ torch: !torch }]
-          });
-          setTorch(!torch);
-          // Reinicializa el escáner con la nueva configuración de la linterna
-          Quagga.stop();
-          initializeScanner();
-        } catch (err) {
-          console.error('Error toggling torch:', err);
-        }
-      } else {
-        console.log('Torch is not supported on this device');
-      }
-    }
+    e.preventDefault();
+    e.stopPropagation();
+    torchRef.current = !torchRef.current;
+    setTorch(torchRef.current);
+    await applyTorchState();
   };
 
   const handleClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
     const stream = scannerRef.current?.querySelector('video')?.srcObject as MediaStream;
     if (stream) {
       const track = stream.getVideoTracks()[0];
