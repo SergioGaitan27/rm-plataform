@@ -38,6 +38,12 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan }) => {
           },
           locate: true,
           frequency: 10, // Increase scan frequency for faster scanning
+          area: {
+            top: "20%",    // top offset
+            right: "20%",  // right offset
+            left: "20%",   // left offset
+            bottom: "20%"  // bottom offset
+          }
         },
         (err) => {
           if (err) {
