@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import LoadingSpinner from '@/components/LoadingSpinner';
-import { BarcodeScanner } from '@/components/BarcodeScanner'; // Asegúrate de crear este componente
+import { BarcodeScanner } from '@/components/BarcodeScanner';
 import Image from 'next/image';
 
 interface StockLocation {
@@ -57,12 +57,17 @@ const CreateProductPage: React.FC = () => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
 
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/login');
+    }
+  }, [status, router]);
+
   if (status === 'loading') {
     return <LoadingSpinner />;
   }
 
-  if (status === 'unauthenticated' || !session) {
-    router.push('/login');
+  if (!session) {
     return null;
   }
 
@@ -109,7 +114,7 @@ const CreateProductPage: React.FC = () => {
   };
 
   const handleBarcodeScanned = (barcode: string) => {
-    setProduct({ ...product, productCode: barcode });
+    setProduct(prev => ({ ...prev, productCode: barcode }));
     setShowBarcodeScanner(false);
   };
 
@@ -225,7 +230,12 @@ const CreateProductPage: React.FC = () => {
                   Escanear
                 </button>
               </div>
-              {showBarcodeScanner && <BarcodeScanner onScan={handleBarcodeScanned} />}
+              {showBarcodeScanner && (
+                <BarcodeScanner 
+                  onScan={handleBarcodeScanned}
+                  onClose={() => setShowBarcodeScanner(false)}
+                />
+              )}
               <input
                 type="text"
                 name="name"

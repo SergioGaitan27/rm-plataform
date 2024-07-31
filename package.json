@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@zxing/library": "^0.21.2",
     "bcryptjs": "^2.4.3",
     "cloudinary": "^2.4.0",
     "mongoose": "^8.5.1",
