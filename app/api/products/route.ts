@@ -19,7 +19,7 @@ export async function POST(req: Request) {
 export async function GET() {
   try {
     await connectDB();
-    const products = await Product.find({}).select('name productCode price1 imageUrl');
+    const products = await Product.find({});
     return NextResponse.json(products);
   } catch (error) {
     console.error('Error al obtener los productos:', error);

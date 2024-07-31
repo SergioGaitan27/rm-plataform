@@ -27,7 +27,7 @@ const ProductAdminPage = () => {
         { name: 'Créditos', allowedRoles: ['super_administrador', 'administrador'], icon: '💳' },
         { name: 'Catálogo', allowedRoles: ['super_administrador', 'administrador'], icon: '📚' },
         { name: 'Administración', allowedRoles: ['super_administrador', 'administrador'], icon: '⚙️' },
-        { name: 'Configuración', allowedRoles: ['super_administrador', 'administrador'], icon: '🔧' },
+        // { name: 'Configuración', allowedRoles: ['super_administrador', 'administrador'], icon: '🔧' },
         { name: 'Dashboard', allowedRoles: ['super_administrador', 'administrador'], icon: '🗂️' },
       ]);
       setLoading(false);
