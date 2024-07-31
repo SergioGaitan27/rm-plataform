@@ -1,3 +1,11 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.scanner-container {
+  width: 100%;
+  height: 320px; /* Puedes ajustar la altura según tus necesidades */
+  position: relative;
+  border: 2px solid yellow; /* Opcional: para visualizar el contenedor */
+  background-color: black; /* Opcional: para un mejor contraste */
+}

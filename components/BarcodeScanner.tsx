@@ -49,5 +49,6 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan }) => {
     };
   }, [onScan]);
 
-  return <div ref={scannerRef} className="w-full h-64 relative" />;
+  return <div ref={scannerRef} className="scanner-container" />;
 };
+
