@@ -1,4 +1,3 @@
-// components/BarcodeScanner.tsx
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import Quagga from 'quagga';
 
@@ -95,9 +94,9 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan }) => {
         }
       );
 
-      Quagga.onDetected((result) => {
+      Quagga.onDetected(async (result) => {
         if (result.codeResult.code) {
-          onScan(result.codeResult.code);
+          await onScan(result.codeResult.code);
           Quagga.stop();
         }
       });
@@ -129,9 +128,18 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan }) => {
   }, [onScan, applyTorchState]);
 
   useEffect(() => {
-    initializeScanner();
+    let isMounted = true;
+
+    const setupScanner = async () => {
+      await initializeScanner();
+    };
+
+    if (isMounted) {
+      setupScanner();
+    }
 
     return () => {
+      isMounted = false;
       Quagga.stop();
     };
   }, [initializeScanner]);
@@ -181,35 +189,6 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan }) => {
     }
   };
 
-  const handleClick = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    const stream = scannerRef.current?.querySelector('video')?.srcObject as MediaStream;
-    if (stream) {
-      const track = stream.getVideoTracks()[0];
-      const capabilities = track.getCapabilities();
-      
-      const constraints: MediaTrackConstraints = {};
-      
-      if ('focusMode' in capabilities) {
-        constraints.focusMode = 'manual';
-      }
-      
-      if ('focusDistance' in capabilities && capabilities.focusDistance) {
-        constraints.focusDistance = capabilities.focusDistance.min;
-      }
-
-      if (Object.keys(constraints).length > 0) {
-        try {
-          await track.applyConstraints(constraints);
-        } catch (error) {
-          console.error('Error applying focus constraints:', error);
-        }
-      } else {
-        console.log('Focus capabilities are not available on this device.');
-      }
-    }
-  };
-
   return (
     <div className="scanner-container">
       <div ref={scannerRef} className="scanner" />
@@ -233,3 +212,5 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan }) => {
     </div>
   );
 };
+
+export default BarcodeScanner;

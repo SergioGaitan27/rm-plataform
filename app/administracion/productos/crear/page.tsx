@@ -1,12 +1,15 @@
-// app/administracion/productos/crear/page.tsx
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import LoadingSpinner from '@/components/LoadingSpinner';
-import { BarcodeScanner } from '@/components/BarcodeScanner';
+import dynamic from 'next/dynamic';
 import Image from 'next/image';
+
+const BarcodeScanner = dynamic(() => import('@/components/BarcodeScanner'), {
+  ssr: false,
+});
 
 interface StockLocation {
   location: string;
@@ -30,7 +33,6 @@ interface ProductForm {
   stockLocations: StockLocation[];
   imageUrl?: string;
 }
-
 
 const CreateProductPage: React.FC = () => {
   const { data: session, status } = useSession();
@@ -56,6 +58,9 @@ const CreateProductPage: React.FC = () => {
   const [newLocation, setNewLocation] = useState<StockLocation>({ location: '', quantity: undefined });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isConfirmed, setIsConfirmed] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -83,10 +88,10 @@ const CreateProductPage: React.FC = () => {
   };
 
   const handleLocationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  const { name, value } = e.target;
-  setNewLocation(prev => ({
-    ...prev,
-    [name]: name === 'quantity' ? (value === '' ? undefined : parseInt(value)) : value
+    const { name, value } = e.target;
+    setNewLocation(prev => ({
+      ...prev,
+      [name]: name === 'quantity' ? (value === '' ? undefined : parseInt(value)) : value
     }));
   };
 
@@ -113,91 +118,99 @@ const CreateProductPage: React.FC = () => {
     }
   };
 
-  const handleBarcodeScanned = (barcode: string) => {
-    setProduct({ ...product, productCode: barcode });
-    setShowBarcodeScanner(false);
+  const handleBarcodeScanned = async (barcode: string) => {
+    try {
+      await setProduct(prev => ({ ...prev, productCode: barcode }));
+      setShowBarcodeScanner(false);
+    } catch (error) {
+      setError('Hubo un problema al escanear el código de barras. Por favor, intenta de nuevo.');
+      console.error('Error al manejar el código de barras:', error);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
+    setError(null);
     
     try {
-        // Subir la imagen si existe
-        let imageUrl = '';
-        if (imageFile) {
-            const formData = new FormData();
-            formData.append('file', imageFile);
-            formData.append('upload_preset', 'xgmwzgac'); // Reemplaza con tu upload preset de Cloudinary
+      let imageUrl = '';
+      if (imageFile) {
+        const formData = new FormData();
+        formData.append('file', imageFile);
+        formData.append('upload_preset', 'xgmwzgac');
 
-            const imageResponse = await fetch('https://api.cloudinary.com/v1_1/dpsrtoyp7/image/upload', {
-                method: 'POST',
-                body: formData
-            });
-
-            if (!imageResponse.ok) {
-                const errorText = await imageResponse.text(); // Obtener el texto de error para depuración
-                throw new Error(`Error al subir la imagen: ${errorText}`);
-            }
-
-            const imageData = await imageResponse.json();
-            imageUrl = imageData.secure_url;
-        }
-
-        // Preparar los datos del producto
-        const productData = {
-            ...product,
-            imageUrl
-        };
-
-        // Enviar los datos del producto al servidor
-        const response = await fetch('/api/products', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(productData),
+        const imageResponse = await fetch('https://api.cloudinary.com/v1_1/dpsrtoyp7/image/upload', {
+          method: 'POST',
+          body: formData
         });
 
-        if (!response.ok) {
-            throw new Error('Error al guardar el producto');
+        if (!imageResponse.ok) {
+          const errorText = await imageResponse.text();
+          throw new Error(`Error al subir la imagen: ${errorText}`);
         }
 
-        const savedProduct = await response.json();
-        console.log('Producto guardado:', savedProduct);
+        const imageData = await imageResponse.json();
+        imageUrl = imageData.secure_url;
+      }
 
-        // Limpiar el formulario o redirigir
+      const productData = {
+        ...product,
+        imageUrl
+      };
+
+      const response = await fetch('/api/products', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(productData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al guardar el producto');
+      }
+
+      const savedProduct = await response.json();
+      console.log('Producto guardado:', savedProduct);
+
+      setIsLoading(false);
+      setIsConfirmed(true);
+
+      setTimeout(() => {
         setProduct({
-            boxCode: '',
-            productCode: '',
-            name: '',
-            piecesPerBox: 0,
-            cost: 0,
-            price1: 0,
-            price1MinQty: 0,
-            price2: 0,
-            price2MinQty: 0,
-            price3: 0,
-            price3MinQty: 0,
-            price4: 0,
-            price5: 0,
-            stockLocations: [],
+          boxCode: '',
+          productCode: '',
+          name: '',
+          piecesPerBox: undefined,
+          cost: undefined,
+          price1: undefined,
+          price1MinQty: undefined,
+          price2: undefined,
+          price2MinQty: undefined,
+          price3: undefined,
+          price3MinQty: undefined,
+          price4: undefined,
+          price5: undefined,
+          stockLocations: [],
         });
         setImageFile(null);
-
-        // Opcionalmente, redirigir a la lista de productos
-        router.push('/administracion/productos/catalogo');
+        setIsConfirmed(false);
+        router.push('/catalogo');
+      }, 2000);
 
     } catch (error) {
-        console.error('Error al crear el producto:', error);
-        // Aquí podrías mostrar un mensaje de error al usuario
+      console.error('Error al crear el producto:', error);
+      setIsLoading(false);
+      setError('Hubo un error al guardar el producto. Por favor, intenta de nuevo.');
     }
-};
-
+  };
 
   return (
     <div className="min-h-screen bg-black text-yellow-400 p-4">
-      <div className="max-w-md mx-auto">
+      <div className="max-w-md mx-auto relative">
         <h1 className="text-2xl font-bold mb-6">Crear Producto</h1>
+        {error && <p className="text-red-500 mb-4">{error}</p>}
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Datos del Producto */}
           <fieldset className="border border-yellow-400 rounded p-4">
@@ -373,11 +386,29 @@ const CreateProductPage: React.FC = () => {
             </div>
           </fieldset>
 
-          <button type="submit" className="w-full bg-yellow-400 text-black p-2 rounded hover:bg-yellow-500 transition-colors">
-            Guardar Producto
+          <button 
+            type="submit" 
+            className="w-full bg-yellow-400 text-black p-2 rounded hover:bg-yellow-500 transition-colors"
+            disabled={isLoading}
+          >
+            {isLoading ? 'Guardando...' : 'Guardar Producto'}
           </button>
         </form>
-      </div>
+
+        {isLoading && (
+          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+            <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-yellow-400"></div>
+          </div>
+        )}
+
+        {isConfirmed && (
+          <div className="fixed inset-0 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-lg shadow-xl">
+              <p className="text-green-500 text-xl font-bold">¡Producto guardado exitosamente!</p>
+            </div>
+          </div>
+        )}
+      </div>  
     </div>
   );
 };
