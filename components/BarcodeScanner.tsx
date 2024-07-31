@@ -18,9 +18,14 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan }) => {
             type: 'LiveStream',
             target: scannerRef.current,
             constraints: {
-              width: 640,
-              height: 480,
-              facingMode: 'environment', // use the rear camera
+              width: { ideal: 640 },
+              height: { ideal: 480 },
+              facingMode: 'environment', // Use the rear camera
+              focusMode: 'continuous', // Continuous focus
+              advanced: [{
+                focusMode: 'continuous',
+                focusDistance: { ideal: 0.1 } // Try to set focus distance for close objects
+              }]
             },
           },
           locator: {
