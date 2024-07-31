@@ -1,5 +1,5 @@
 // components/BarcodeScanner.tsx
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import Quagga from 'quagga';
 
 interface BarcodeScannerProps {
@@ -7,11 +7,6 @@ interface BarcodeScannerProps {
 }
 
 interface Point {
-  x: number;
-  y: number;
-}
-
-interface Box {
   x: number;
   y: number;
 }
@@ -31,7 +26,7 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan }) => {
   const scannerRef = useRef<HTMLDivElement>(null);
   const [torch, setTorch] = useState(false);
 
-  useEffect(() => {
+  const initializeScanner = useCallback(() => {
     if (scannerRef.current) {
       Quagga.init(
         {
@@ -43,7 +38,7 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan }) => {
               width: { ideal: 640 },
               height: { ideal: 480 },
               facingMode: 'environment',
-              advanced: [{ torch: torch }]
+              advanced: [{ torch }]
             },
           },
           locator: {
@@ -55,13 +50,13 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan }) => {
             readers: [
               'ean_reader', 
               'ean_8_reader', 
-              // 'code_128_reader', 
-              // 'code_39_reader', 
-              // 'code_39_vin_reader', 
-              // 'codabar_reader', 
-              // 'upc_reader', 
-              // 'upc_e_reader', 
-              // 'i2of5_reader'
+              'code_128_reader', 
+              'code_39_reader', 
+              'code_39_vin_reader', 
+              'codabar_reader', 
+              'upc_reader', 
+              'upc_e_reader', 
+              'i2of5_reader'
             ],
           },
           locate: true,
@@ -113,13 +108,18 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan }) => {
         }
       });
     }
+  }, [onScan, torch]);
+
+  useEffect(() => {
+    initializeScanner();
 
     return () => {
       Quagga.stop();
     };
-  }, [onScan, torch]);
+  }, [initializeScanner]);
 
-  const toggleTorch = async () => {
+  const toggleTorch = async (e: React.MouseEvent) => {
+    e.stopPropagation(); // Evita la propagación del evento
     const stream = scannerRef.current?.querySelector('video')?.srcObject as MediaStream;
     if (stream) {
       const track = stream.getVideoTracks()[0];
@@ -130,6 +130,9 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan }) => {
             advanced: [{ torch: !torch }]
           });
           setTorch(!torch);
+          // Reinicializa el escáner con la nueva configuración de la linterna
+          Quagga.stop();
+          initializeScanner();
         } catch (err) {
           console.error('Error toggling torch:', err);
         }
@@ -139,11 +142,11 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan }) => {
     }
   };
 
-  const handleClick = async () => {
+  const handleClick = async (e: React.MouseEvent) => {
     const stream = scannerRef.current?.querySelector('video')?.srcObject as MediaStream;
     if (stream) {
       const track = stream.getVideoTracks()[0];
-      const capabilities = track.getCapabilities() as any;
+      const capabilities = track.getCapabilities();
       
       const constraints: MediaTrackConstraints = {};
       
