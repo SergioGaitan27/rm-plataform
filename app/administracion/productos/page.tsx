@@ -27,7 +27,6 @@ const ProductAdminPage = () => {
         { name: 'Créditos', allowedRoles: ['super_administrador', 'administrador'], icon: '💳' },
         { name: 'Catálogo', allowedRoles: ['super_administrador', 'administrador'], icon: '📚' },
         { name: 'Administración', allowedRoles: ['super_administrador', 'administrador'], icon: '⚙️' },
-        // { name: 'Configuración', allowedRoles: ['super_administrador', 'administrador'], icon: '🔧' },
         { name: 'Dashboard', allowedRoles: ['super_administrador', 'administrador'], icon: '🗂️' },
       ]);
       setLoading(false);
@@ -54,10 +53,9 @@ const ProductAdminPage = () => {
 
   const productCategories = [
     { name: 'Crear producto', path: '/administracion/productos/crear', icon: '🆕' },
-    // { name: 'Modificar producto', path: '/administracion/productos/modificar', icon: '✏️' },
-    // { name: 'Eliminar producto', path: '/administracion/productos/eliminar', icon: '🗑️' },
     { name: 'Modificar producto', path: '/bajo-construccion', icon: '✏️' },
     { name: 'Eliminar producto', path: '/bajo-construccion', icon: '🗑️' },
+    { name: 'Transferencias', path: '/transferencias', icon: '↔️' }, // Nueva categoría añadida
   ];
 
   return (
