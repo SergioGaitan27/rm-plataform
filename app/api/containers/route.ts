@@ -26,12 +26,46 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   await connectDB();
 
   try {
-    const containers = await Container.find({});
+    const { searchParams } = new URL(req.url);
+    const status = searchParams.get('status');
+
+    let query = {};
+    if (status) {
+      query = { status: { $in: status.split(',') } };
+    }
+
+    const containers = await Container.find(query);
     return NextResponse.json({ success: true, data: containers });
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return NextResponse.json({ success: false, message: error.message }, { status: 400 });
+    }
+    return NextResponse.json({ success: false, message: 'An unknown error occurred' }, { status: 400 });
+  }
+}
+
+export async function PUT(req: NextRequest) {
+  await connectDB();
+
+  try {
+    const body = await req.json();
+    const { containerNumber, status } = body;
+
+    const updatedContainer = await Container.findOneAndUpdate(
+      { containerNumber },
+      { status, updatedAt: new Date() },
+      { new: true }
+    );
+
+    if (!updatedContainer) {
+      return NextResponse.json({ success: false, message: 'Container not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({ success: true, data: updatedContainer });
   } catch (error: unknown) {
     if (error instanceof Error) {
       return NextResponse.json({ success: false, message: error.message }, { status: 400 });
