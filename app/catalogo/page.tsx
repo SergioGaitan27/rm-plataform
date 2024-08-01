@@ -150,7 +150,10 @@ const ProductCatalog: React.FC = () => {
                     <p key={index}>{location.location}: {location.quantity}</p>
                   ))}
                 </div>
-                <Link href={`/administracion/productos/${product._id}`} className="mt-3 block text-center bg-yellow-400 text-black py-2 rounded hover:bg-yellow-300 transition-colors duration-300">
+                {/* <Link href={`/administracion/productos/${product._id}`} className="mt-3 block text-center bg-yellow-400 text-black py-2 rounded hover:bg-yellow-300 transition-colors duration-300">
+                  Ver detalles
+                </Link> */}
+                <Link href={`/bajo-construccion`} className="mt-3 block text-center bg-yellow-400 text-black py-2 rounded hover:bg-yellow-300 transition-colors duration-300">
                   Ver detalles
                 </Link>
               </div>
