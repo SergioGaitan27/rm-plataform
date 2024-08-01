@@ -9,7 +9,7 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 interface Product {
     name: string;
     code: string;
-    boxes: number | null;
+    expectedBoxes: number | null;
 }
 
 const PrecargaContenedor = () => {
@@ -18,7 +18,7 @@ const PrecargaContenedor = () => {
 
   const [containerNumber, setContainerNumber] = useState('');
   const [products, setProducts] = useState<Product[]>([]);
-  const [newProduct, setNewProduct] = useState<Product>({ name: '', code: '', boxes: null });
+  const [newProduct, setNewProduct] = useState<Product>({ name: '', code: '', expectedBoxes: null });
   const [isLoading, setIsLoading] = useState(false);
   const [isConfirmed, setIsConfirmed] = useState(false);
 
@@ -38,14 +38,14 @@ const PrecargaContenedor = () => {
   const handleNewProductChange = (field: keyof Product, value: string | number | null) => {
     setNewProduct(prev => ({
       ...prev,
-      [field]: field === 'boxes' ? (value === '' ? null : Number(value)) : value?.toString().toUpperCase()
+      [field]: field === 'expectedBoxes' ? (value === '' ? null : Number(value)) : value?.toString().toUpperCase()
     }));
   };
 
   const addProduct = () => {
-    if (newProduct.name && newProduct.code && newProduct.boxes !== null) {
+    if (newProduct.name && newProduct.code && newProduct.expectedBoxes !== null) {
       setProducts([...products, newProduct]);
-      setNewProduct({ name: '', code: '', boxes: null });
+      setNewProduct({ name: '', code: '', expectedBoxes: null });
     }
   };
 
@@ -71,7 +71,7 @@ const PrecargaContenedor = () => {
         setTimeout(() => {
           setContainerNumber('');
           setProducts([]);
-          setNewProduct({ name: '', code: '', boxes: null });
+          setNewProduct({ name: '', code: '', expectedBoxes: null });
           setIsConfirmed(false);
           router.push('/administracion/contenedores');
         }, 2000);
@@ -102,7 +102,6 @@ const PrecargaContenedor = () => {
             onChange={handleContainerNumberChange}
             placeholder="Número de Contenedor"
             className="w-full p-2 bg-gray-800 border border-yellow-400 rounded text-yellow-400 placeholder-yellow-400 placeholder-opacity-50 uppercase-input"
-            required
           />
         </div>
 
@@ -112,7 +111,7 @@ const PrecargaContenedor = () => {
             <div key={index} className="mb-4 p-4 border border-yellow-400 rounded bg-gray-800">
               <p>Nombre: {product.name}</p>
               <p>Código: {product.code}</p>
-              <p>Cajas: {product.boxes}</p>
+              <p>Cajas: {product.expectedBoxes}</p>
             </div>
           ))}
           <div className="mb-4 p-4 border border-yellow-400 rounded">
@@ -133,8 +132,8 @@ const PrecargaContenedor = () => {
             <input
               type="number"
               placeholder="Cajas a recibir"
-              value={newProduct.boxes === null ? '' : newProduct.boxes}
-              onChange={(e) => handleNewProductChange('boxes', e.target.value)}
+              value={newProduct.expectedBoxes === null ? '' : newProduct.expectedBoxes}
+              onChange={(e) => handleNewProductChange('expectedBoxes', e.target.value)}
               className="w-full p-2 mb-2 bg-gray-800 border border-yellow-400 rounded text-yellow-400 placeholder-yellow-400 placeholder-opacity-50"
             />
           </div>

@@ -8,7 +8,7 @@ import { FaPlus, FaMinus, FaBarcode } from 'react-icons/fa';
 interface Product {
   name: string;
   code: string;
-  boxes: number;
+  expectedBoxes?: number;
   receivedBoxes?: number;
 }
 
@@ -25,6 +25,7 @@ export default function ContainerDetails({ params }: { params: { containerNumber
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isConfirmed, setIsConfirmed] = useState(false);
 
   const fetchContainerDetails = useCallback(async () => {
     try {
@@ -58,7 +59,7 @@ export default function ContainerDetails({ params }: { params: { containerNumber
     if (!container) return { expected: 0, received: 0 };
     return container.products.reduce(
       (acc, product) => ({
-        expected: acc.expected + product.boxes,
+        expected: acc.expected + (product.expectedBoxes || 0),
         received: acc.received + (product.receivedBoxes || 0)
       }),
       { expected: 0, received: 0 }
@@ -72,22 +73,30 @@ export default function ContainerDetails({ params }: { params: { containerNumber
       const response = await fetch(`/api/containers/${params.containerNumber}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'received' }),
+        body: JSON.stringify({
+          status: 'received',
+          products: container.products
+        }),
       });
   
-      if (!response.ok) throw new Error('Failed to update container status');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update container status');
+      }
   
       const result = await response.json();
-      alert(result.message); // Muestra el mensaje de confirmación
-      router.push('/administracion/contenedores/recepcion');
+      setIsConfirmed(true);
+      setTimeout(() => {
+        setIsConfirmed(false);
+        router.push('/administracion/contenedores');
+      }, 2000);
     } catch (error) {
       console.error('Error receiving container:', error);
-      setError('Error al recibir el contenedor');
+      setError('Error al recibir el contenedor: ' + (error instanceof Error ? error.message : String(error)));
     } finally {
       setIsLoading(false);
     }
   };
-
   if (isLoading) return <LoadingSpinner />;
   if (error) return <div className="text-red-500">{error}</div>;
   if (!container) return <div>No se encontró el contenedor</div>;
@@ -143,7 +152,7 @@ export default function ContainerDetails({ params }: { params: { containerNumber
               </div>
               <div className="flex justify-between items-center bg-gray-800 p-3 rounded-lg">
                 <div>
-                  <p className="text-base text-gray-400">Cajas esperadas: <span className="font-bold text-yellow-400">{product.boxes}</span></p>
+                  <p className="text-base text-gray-400">Cajas esperadas: <span className="font-bold text-yellow-400">{product.expectedBoxes}</span></p>
                   <p className="text-base text-gray-400">Cajas recibidas: <span className="font-bold text-yellow-400">{product.receivedBoxes || 0}</span></p>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -175,6 +184,20 @@ export default function ContainerDetails({ params }: { params: { containerNumber
           {isLoading ? 'Procesando...' : 'Confirmar Recepción'}
         </button>
       </div>
+
+      {isLoading && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-yellow-400"></div>
+        </div>
+      )}
+
+      {isConfirmed && (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-xl">
+            <p className="text-green-500 text-xl font-bold">¡Contenedor recibido exitosamente!</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
