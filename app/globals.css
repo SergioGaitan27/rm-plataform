@@ -76,3 +76,11 @@
   .animate-spin {
     animation: spin 1s linear infinite;
   }
+
+  .uppercase-input {
+    text-transform: uppercase;
+  }
+  
+  .uppercase-input::placeholder {
+    text-transform: none;
+  }

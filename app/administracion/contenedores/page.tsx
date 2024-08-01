@@ -1,4 +1,3 @@
-// app/administracion/page.tsx
 'use client';
 
 import { useSession } from 'next-auth/react';
@@ -14,7 +13,7 @@ type Category = {
   icon: string;
 };
 
-const AdminPage = () => {
+const ContainerAdminPage = () => {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
@@ -28,7 +27,6 @@ const AdminPage = () => {
         { name: 'Créditos', allowedRoles: ['super_administrador', 'administrador'], icon: '💳' },
         { name: 'Catálogo', allowedRoles: ['super_administrador', 'administrador'], icon: '📚' },
         { name: 'Administración', allowedRoles: ['super_administrador', 'administrador'], icon: '⚙️' },
-        // { name: 'Configuración', allowedRoles: ['super_administrador', 'administrador'], icon: '🔧' },
         { name: 'Dashboard', allowedRoles: ['super_administrador', 'administrador'], icon: '🗂️' },
       ]);
       setLoading(false);
@@ -53,11 +51,10 @@ const AdminPage = () => {
     category.allowedRoles.includes(userRole as string)
   );
 
-  const adminCategories = [
-    { name: 'Clientes', path: '/administracion/clientes', icon: '👥' },
-    { name: 'Productos', path: '/administracion/productos', icon: '📦' },
-    { name: 'Negocios', path: '/administracion/negocios', icon: '🏢' },
-    { name: 'Contenedores', path: '/administracion/contenedores', icon: '🚛' }, 
+  const containerCategories = [
+    { name: 'Precarga de contenedor', path: '/administracion/contenedores/precarga', icon: '📥' },
+    { name: 'Recepción de contenedor', path: '/administracion/contenedores/recepcion', icon: '🚚' },
+    { name: 'Historial de contenedores', path: '/administracion/contenedores/historial', icon: '📋' },
   ];
 
   return (
@@ -65,13 +62,13 @@ const AdminPage = () => {
       <div className="p-4">
         {/* Título de la página */}
         <div className="bg-gray-900 rounded-lg p-4 mb-6 shadow-md">
-          <h1 className="text-3xl font-bold mb-4 text-center">Administración</h1>
+          <h1 className="text-3xl font-bold text-center mb-4">Administración de Contenedores</h1>
         </div>
 
-        {/* Categorías de administración */}
+        {/* Categorías de contenedores */}
         <div className="bg-gray-900 rounded-lg p-4 mb-6 shadow-md">
           <div className="grid grid-cols-2 gap-4">
-            {adminCategories.map((category, index) => (
+            {containerCategories.map((category, index) => (
               <Link 
                 href={category.path}
                 key={index}
@@ -89,4 +86,4 @@ const AdminPage = () => {
   );
 };
 
-export default AdminPage;
+export default ContainerAdminPage;
