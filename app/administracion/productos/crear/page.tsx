@@ -34,6 +34,18 @@ interface ProductForm {
   imageUrl?: string;
 }
 
+type PrecioPlaceholders = {
+  [key: number]: string;
+};
+
+const precioPlaceholders: PrecioPlaceholders = {
+  1: "Precio menudeo",
+  2: "Precio mayoreo",
+  3: "Precio caja",
+  4: "Precio 4 (opcional)",
+  5: "Precio 5 (opcional)"
+};
+
 const CreateProductPage: React.FC = () => {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -288,7 +300,7 @@ const CreateProductPage: React.FC = () => {
                     name={`price${num}`}
                     value={getInputValue(product[`price${num}` as keyof ProductForm])}
                     onChange={handleInputChange}
-                    placeholder={`Precio ${num}`}
+                    placeholder={precioPlaceholders[num] || `Precio ${num}`}
                     className="w-1/2 p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400 placeholder-yellow-400 placeholder-opacity-50"
                     required
                     step="0.01"
@@ -298,7 +310,7 @@ const CreateProductPage: React.FC = () => {
                     name={`price${num}MinQty`}
                     value={getInputValue(product[`price${num}MinQty` as keyof ProductForm])}
                     onChange={handleInputChange}
-                    placeholder={`Cant. mín. ${num}`}
+                    placeholder={`Cantidad mínima`}
                     className="w-1/2 p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400 placeholder-yellow-400 placeholder-opacity-50"
                     required
                   />
@@ -309,7 +321,7 @@ const CreateProductPage: React.FC = () => {
                 name="price4"
                 value={getInputValue(product.price4)}
                 onChange={handleInputChange}
-                placeholder="Precio 4 (opcional)"
+                placeholder={precioPlaceholders[4]}
                 className="w-full p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400 placeholder-yellow-400 placeholder-opacity-50"
                 step="0.01"
               />
@@ -318,7 +330,7 @@ const CreateProductPage: React.FC = () => {
                 name="price5"
                 value={getInputValue(product.price5)}
                 onChange={handleInputChange}
-                placeholder="Precio 5 (opcional)"
+                placeholder={precioPlaceholders[5]}
                 className="w-full p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400 placeholder-yellow-400 placeholder-opacity-50"
                 step="0.01"
               />

@@ -140,9 +140,9 @@ const ProductCatalog: React.FC = () => {
                 </div>
                 <div className="mt-3">
                   <p className="font-semibold">Precios:</p>
-                  <p>Menudeo: ${product.price1.toFixed(2)} (min. {product.price1MinQty})</p>
-                  <p>Mayoreo: ${product.price2.toFixed(2)} (min. {product.price2MinQty})</p>
-                  <p>Caja: ${product.price3.toFixed(2)} (min. {product.price3MinQty})</p>
+                  <p>Menudeo: ${product.price1.toFixed(2)} | A partir de: {product.price1MinQty}</p>
+                  <p>Mayoreo: ${product.price2.toFixed(2)} | A partir de: {product.price2MinQty}</p>
+                  <p>Caja: ${product.price3.toFixed(2)} | A partir de: {product.price3MinQty}</p>
                 </div>
                 <div className="mt-3">
                   <p className="font-semibold">Inventario:</p>

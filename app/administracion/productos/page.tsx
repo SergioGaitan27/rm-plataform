@@ -54,8 +54,10 @@ const ProductAdminPage = () => {
 
   const productCategories = [
     { name: 'Crear producto', path: '/administracion/productos/crear', icon: '🆕' },
-    { name: 'Modificar producto', path: '/administracion/productos/modificar', icon: '✏️' },
-    { name: 'Eliminar producto', path: '/administracion/productos/eliminar', icon: '🗑️' },
+    // { name: 'Modificar producto', path: '/administracion/productos/modificar', icon: '✏️' },
+    // { name: 'Eliminar producto', path: '/administracion/productos/eliminar', icon: '🗑️' },
+    { name: 'Modificar producto', path: '/bajo-construccion', icon: '✏️' },
+    { name: 'Eliminar producto', path: '/bajo-construccion', icon: '🗑️' },
   ];
 
   return (
