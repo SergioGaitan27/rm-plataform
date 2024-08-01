@@ -134,7 +134,7 @@ export default function ContainerDetails({ params }: { params: { containerNumber
         </div>
       </div>
 
-      <ul className="space-y-4">
+      <ul className="space-y-4 mb-20">
         {filteredProducts.map((product, index) => (
           <li key={product.code} className="bg-gray-900 rounded-lg p-4 shadow-md border border-yellow-400">
               <div className="flex flex-col mb-4">
