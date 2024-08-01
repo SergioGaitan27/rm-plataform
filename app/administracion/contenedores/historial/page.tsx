@@ -57,7 +57,6 @@ const HistorialContenedores = () => {
     // Simulating API call
     await new Promise(resolve => setTimeout(resolve, 1000));
     setCategories([
-      { name: 'Punto de venta', allowedRoles: ['vendedor'], icon: '💰' },
       { name: 'Créditos', allowedRoles: ['super_administrador', 'administrador'], icon: '💳' },
       { name: 'Catálogo', allowedRoles: ['super_administrador', 'administrador'], icon: '📚' },
       { name: 'Administración', allowedRoles: ['super_administrador', 'administrador'], icon: '⚙️' },
@@ -68,8 +67,9 @@ const HistorialContenedores = () => {
   if (status === 'loading' || isLoading) return <LoadingSpinner />;
   if (!session) return null;
 
-  const completedContainers = containers.filter(c => c.totalExpectedBoxes === c.totalReceivedBoxes);
-  const incompleteContainers = containers.filter(c => c.totalExpectedBoxes !== c.totalReceivedBoxes);
+  const sortedContainers = [...containers].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+  const completedContainers = sortedContainers.filter(c => c.totalExpectedBoxes === c.totalReceivedBoxes);
+  const incompleteContainers = sortedContainers.filter(c => c.totalExpectedBoxes !== c.totalReceivedBoxes);
 
   const userRole = session.user?.role;
   const userCategories = categories.filter(category =>
@@ -78,7 +78,7 @@ const HistorialContenedores = () => {
 
   return (
     <div className="min-h-screen bg-black text-yellow-400 flex flex-col justify-between">
-      <div className="p-4">
+      <div className="p-4 pb-24"> {/* Increased bottom padding */}
         {/* Título de la página */}
         <div className="bg-gray-900 rounded-lg p-4 mb-6 shadow-md">
           <h1 className="text-3xl font-bold text-center mb-4">Historial de Contenedores</h1>
@@ -109,7 +109,7 @@ const ContainerList = ({ title, containers }: { title: string, containers: Conta
         {containers.map((container) => (
           <li key={container._id} className="bg-gray-800 rounded-lg p-4 shadow-lg">
             <h3 className="text-xl font-semibold mb-2 text-yellow-400">Contenedor: {container.containerNumber}</h3>
-            <div className="grid grid-cols-2 gap-4 text-lg">
+            <div className="grid grid-cols-2 gap-4 text-sm">
               <InfoItem label="Estado:" value="Recibido" />
               <InfoItem label="Fecha de recepción:" value={new Date(container.updatedAt).toLocaleString()} />
               <InfoItem label="Total de cajas esperadas:" value={container.totalExpectedBoxes.toString()} />
@@ -130,7 +130,7 @@ const ContainerList = ({ title, containers }: { title: string, containers: Conta
 
 const InfoItem = ({ label, value }: { label: string; value: string }) => (
   <div>
-    <p className="text-gray-400 text-base">{label}</p>
+    <p className="text-gray-400 text-xs">{label}</p>
     <p className="font-semibold">{value}</p>
   </div>
 );
