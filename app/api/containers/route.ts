@@ -32,10 +32,14 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const status = searchParams.get('status');
+    const containerNumber = searchParams.get('containerNumber');
 
-    let query = {};
+    let query: any = {};
     if (status) {
-      query = { status: { $in: status.split(',') } };
+      query.status = { $in: status.split(',') };
+    }
+    if (containerNumber) {
+      query.containerNumber = containerNumber;
     }
 
     const containers = await Container.find(query);
@@ -53,11 +57,20 @@ export async function PUT(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { containerNumber, status } = body;
+    const { containerNumber, status, products } = body;
 
     const updatedContainer = await Container.findOneAndUpdate(
       { containerNumber },
-      { status, updatedAt: new Date() },
+      { 
+        status, 
+        products: products.map((p: any) => ({
+          name: p.name,
+          code: p.code,
+          boxes: p.boxes,
+          receivedBoxes: p.receivedBoxes
+        })),
+        updatedAt: new Date() 
+      },
       { new: true }
     );
 

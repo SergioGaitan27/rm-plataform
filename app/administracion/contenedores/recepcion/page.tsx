@@ -3,7 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import BottomNavBar from '@/components/BottomNavBar';
 
 interface Container {
   _id: string;
@@ -12,7 +14,7 @@ interface Container {
   status: 'preloaded' | 'received' | 'completed';
 }
 
-const RecepcionContenedor = () => {
+const ContainerReceptionPage = () => {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [containers, setContainers] = useState<Container[]>([]);
@@ -28,6 +30,7 @@ const RecepcionContenedor = () => {
   }, [status, router]);
 
   const fetchContainers = async () => {
+    setIsLoading(true);
     try {
       const response = await fetch('/api/containers?status=preloaded');
       if (!response.ok) throw new Error('Failed to fetch containers');
@@ -36,32 +39,12 @@ const RecepcionContenedor = () => {
     } catch (error) {
       console.error('Error fetching containers:', error);
       setError('Error al cargar los contenedores');
-    }
-  };
-
-  const handleReceiveContainer = async (containerNumber: string) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const response = await fetch('/api/containers', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ containerNumber, status: 'received' }),
-      });
-
-      if (!response.ok) throw new Error('Failed to update container status');
-
-      setContainers(containers.filter(c => c.containerNumber !== containerNumber));
-      alert('Contenedor recibido exitosamente');
-    } catch (error) {
-      console.error('Error receiving container:', error);
-      setError('Error al recibir el contenedor');
     } finally {
       setIsLoading(false);
     }
   };
 
-  if (status === 'loading') return <LoadingSpinner />;
+  if (status === 'loading' || isLoading) return <LoadingSpinner />;
   if (!session) return null;
 
   return (
@@ -74,21 +57,19 @@ const RecepcionContenedor = () => {
         <ul className="space-y-4">
           {containers.map((container) => (
             <li key={container._id} className="bg-gray-900 rounded-lg p-4 border border-yellow-400">
-              <h2 className="text-xl font-semibold mb-2">Contenedor: {container.containerNumber}</h2>
-              <p>Productos: {container.products.length}</p>
-              <button
-                onClick={() => handleReceiveContainer(container.containerNumber)}
-                disabled={isLoading}
-                className="mt-2 bg-yellow-400 text-black p-2 rounded hover:bg-yellow-500 transition-colors"
-              >
-                {isLoading ? 'Procesando...' : 'Marcar como Recibido'}
-              </button>
+              <Link href={`/administracion/contenedores/recepcion/${container.containerNumber}`}>
+                <div className="cursor-pointer">
+                  <h2 className="text-xl font-semibold mb-2">Contenedor: {container.containerNumber}</h2>
+                  <p>Productos: {container.products.length}</p>
+                </div>
+              </Link>
             </li>
           ))}
         </ul>
       )}
+      <BottomNavBar categories={[]} />
     </div>
   );
 };
 
-export default RecepcionContenedor;
+export default ContainerReceptionPage;
