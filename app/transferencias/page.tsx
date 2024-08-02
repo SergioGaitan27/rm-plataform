@@ -1,4 +1,3 @@
-// app/transferencias/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -21,13 +20,16 @@ interface ITransfer {
   productName: string;
   productCode: string;
   boxCode: string;
-  imageUrl: string; 
+  imageUrl: string;
   fromLocation: string;
   toLocation: string;
   quantity: number;
 }
 
 const TransferenciaProductos = () => {
+  const calculateTotal = (list: ITransfer[]): number => {
+    return list.reduce((total, item) => total + item.quantity, 0);
+  };
   const { data: session, status } = useSession();
   const router = useRouter();
 
@@ -83,7 +85,7 @@ const TransferenciaProductos = () => {
       productName: product.name,
       productCode: product.productCode,
       boxCode: product.boxCode,
-      imageUrl: product.imageUrl || '' // Asegúrate de que product.imageUrl exista en la interfaz IProduct
+      imageUrl: product.imageUrl || ''
     }));
     setSearchTerm('');
     setShowProductList(false);
@@ -180,17 +182,20 @@ const TransferenciaProductos = () => {
         body: JSON.stringify(transferData),
       });
 
-      if (response.ok) {
-        setIsConfirmed(true);
-        setTimeout(() => {
-          setTransferList([]);
-          setTransferImage(null);
-          setIsConfirmed(false);
-        }, 2000);
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Error al realizar las transferencias');
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Error response:', response.status, errorText);
+        throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
       }
+
+      const responseData = await response.json();
+      setIsConfirmed(true);
+      window.open(responseData.pdfUrl, '_blank');
+      setTimeout(() => {
+        setTransferList([]);
+        setTransferImage(null);
+        setIsConfirmed(false);
+      }, 2000);
     } catch (error: unknown) {
       if (error instanceof Error) {
         alert(error.message);
@@ -230,7 +235,7 @@ const TransferenciaProductos = () => {
                       onClick={() => handleProductSelect(product)}
                       className="cursor-pointer p-2 hover:bg-gray-700"
                     >
-                      {product.name} - {product.productCode} - {product.boxCode}
+                      {product.boxCode} | {product.name} 
                     </div>
                   ))
                 }
@@ -242,6 +247,8 @@ const TransferenciaProductos = () => {
         {selectedProduct && (
           <div className="bg-gray-900 rounded-lg p-4 border border-yellow-400">
             <h2 className="text-xl font-semibold mb-4">Detalles de Transferencia</h2>
+            <h3 className="text-lg font-semibold mb-2">Producto Seleccionado:</h3>
+            <p className="mb-4 text-yellow-400">{selectedProduct.boxCode} | {selectedProduct.name}</p>
             <h3 className="text-lg font-semibold mb-2">Stock Actual:</h3>
             {selectedProduct.stockLocations.map((loc, index) => (
               <div key={index} className="mb-2">
@@ -336,7 +343,7 @@ const TransferenciaProductos = () => {
 
         {transferList.length > 0 && (
         <div className="bg-gray-900 rounded-lg p-4 border border-yellow-400">
-            <h2 className="text-2xl font-bold mb-4 text-center">Lista de transferencias</h2>
+            <h2 className="text-2xl font-bold mb-4 text-center">Total de productos a transferir: {calculateTotal(transferList)}</h2>
             {transferList.map((item, index) => (
             <div key={index} className="mb-4 p-4 bg-gray-800 rounded-lg shadow-lg">
                 <div className="flex">
