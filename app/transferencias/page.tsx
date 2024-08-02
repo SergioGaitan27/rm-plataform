@@ -30,6 +30,7 @@ const TransferenciaProductos = () => {
   const calculateTotal = (list: ITransfer[]): number => {
     return list.reduce((total, item) => total + item.quantity, 0);
   };
+
   const { data: session, status } = useSession();
   const router = useRouter();
 
@@ -53,6 +54,7 @@ const TransferenciaProductos = () => {
   const [isAddingNewLocation, setIsAddingNewLocation] = useState(false);
   const [transferList, setTransferList] = useState<ITransfer[]>([]);
   const [transferImage, setTransferImage] = useState<File | null>(null);
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -89,21 +91,22 @@ const TransferenciaProductos = () => {
     }));
     setSearchTerm('');
     setShowProductList(false);
+    setErrorMessage(''); // Reset error message on product select
   };
 
   const handleTransferChange = (field: keyof ITransfer, value: string | number) => {
     setTransfer(prev => {
       const newTransfer = { ...prev, [field]: value };
-      
+
       if (field === 'quantity' || field === 'fromLocation') {
         const fromLocation = selectedProduct?.stockLocations.find(loc => loc.location === newTransfer.fromLocation);
         const availableQuantity = fromLocation?.quantity || 0;
-        
+
         if (typeof newTransfer.quantity === 'number' && newTransfer.quantity > availableQuantity) {
           newTransfer.quantity = availableQuantity;
         }
       }
-      
+
       return newTransfer;
     });
   };
@@ -122,6 +125,14 @@ const TransferenciaProductos = () => {
   };
 
   const handleAddToTransferList = () => {
+    // Check for duplicate products in the transfer list
+    const isDuplicate = transferList.some(item => item.productId === transfer.productId && item.fromLocation === transfer.fromLocation && item.toLocation === transfer.toLocation);
+
+    if (isDuplicate) {
+      setErrorMessage('El producto ya está en la lista con la misma ubicación de origen y destino.');
+      return;
+    }
+
     if (selectedProduct && transfer.fromLocation && transfer.toLocation && transfer.quantity > 0) {
       setTransferList(prev => [...prev, transfer]);
       setSelectedProduct(null);
@@ -137,6 +148,10 @@ const TransferenciaProductos = () => {
       });
       setSearchTerm('');
     }
+  };
+
+  const handleRemoveFromTransferList = (index: number) => {
+    setTransferList(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -359,77 +374,88 @@ const TransferenciaProductos = () => {
             >
               Agregar a la lista de transferencias
             </button>
+
+            {errorMessage && (
+              <div className="mt-2 text-red-500 font-semibold">{errorMessage}</div>
+            )}
           </div>
         )}
 
         {transferList.length > 0 && (
-        <div className="bg-gray-900 rounded-lg p-4 border border-yellow-400">
+          <div className="bg-gray-900 rounded-lg p-4 border border-yellow-400">
             <h2 className="text-2xl font-bold mb-4 text-center">Total de productos a transferir: {calculateTotal(transferList)}</h2>
             {transferList.map((item, index) => (
-            <div key={index} className="mb-4 p-4 bg-gray-800 rounded-lg shadow-lg">
+              <div key={index} className="mb-4 p-4 bg-gray-800 rounded-lg shadow-lg">
                 <div className="flex">
-                <div className="w-1/3 pr-4">
+                  <div className="w-1/3 pr-4">
                     {item.imageUrl && (
-                    <div className="relative w-full h-40">
+                      <div className="relative w-full h-40">
                         <Image
-                        src={item.imageUrl}
-                        alt={item.productName}
-                        fill
-                        style={{ objectFit: 'cover' }}
-                        className="rounded"
+                          src={item.imageUrl}
+                          alt={item.productName}
+                          fill
+                          style={{ objectFit: 'cover' }}
+                          className="rounded"
                         />
-                    </div>
+                      </div>
                     )}
-                </div>
-                    <div className="w-2/3 flex flex-col justify-between">
-                        <div>
-                            <h3 className="text-xl font-bold mb-2">{item.productName}</h3>
-                            <p><span className="font-semibold">Código de Producto:</span> {item.productCode}</p>
-                            <p><span className="font-semibold">Código de Caja:</span> {item.boxCode}</p>
-                        </div>
-                        <div className="mt-2">
-                            <p><span className="font-semibold">Desde:</span> {item.fromLocation}</p>
-                            <p><span className="font-semibold">Hacia:</span> {item.toLocation}</p>
-                            <p><span className="font-semibold">Cantidad:</span> {item.quantity}</p>
-                        </div>
+                  </div>
+                  <div className="w-2/3 flex flex-col justify-between">
+                    <div>
+                      <h3 className="text-xl font-bold mb-2">{item.productName}</h3>
+                      <p><span className="font-semibold">Código de Producto:</span> {item.productCode}</p>
+                      <p><span className="font-semibold">Código de Caja:</span> {item.boxCode}</p>
                     </div>
+                    <div className="mt-2">
+                      <p><span className="font-semibold">Desde:</span> {item.fromLocation}</p>
+                      <p><span className="font-semibold">Hacia:</span> {item.toLocation}</p>
+                      <p><span className="font-semibold">Cantidad:</span> {item.quantity}</p>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveFromTransferList(index)}
+                        className="mt-2 bg-red-500 text-white p-2 rounded hover:bg-red-600 transition-colors"
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                  </div>
                 </div>
-            </div>
+              </div>
             ))}
-        </div>
+          </div>
         )}
         <div className="mt-6 bg-gray-900 rounded-lg p-4 border border-yellow-400">
-        <h3 className="text-xl font-semibold mb-4">Imagen de evidencia:</h3>
-        <div className="relative">
+          <h3 className="text-xl font-semibold mb-4">Imagen de evidencia:</h3>
+          <div className="relative">
             <input
-            type="file"
-            id="evidenceImage"
-            accept="image/*"
-            onChange={handleImageChange}
-            className="hidden"
+              type="file"
+              id="evidenceImage"
+              accept="image/*"
+              onChange={handleImageChange}
+              className="hidden"
             />
             <label
-            htmlFor="evidenceImage"
-            className="w-full p-2 bg-gray-800 border border-yellow-400 rounded text-yellow-400 cursor-pointer flex justify-between items-center"
+              htmlFor="evidenceImage"
+              className="w-full p-2 bg-gray-800 border border-yellow-400 rounded text-yellow-400 cursor-pointer flex justify-between items-center"
             >
-            <span className="text-yellow-400 opacity-50">
+              <span className="text-yellow-400 opacity-50">
                 {transferImage ? transferImage.name : "Seleccionar archivo"}
-            </span>
-            <span className="bg-yellow-400 text-black px-2 py-1 rounded text-sm">
+              </span>
+              <span className="bg-yellow-400 text-black px-2 py-1 rounded text-sm">
                 Seleccionar
-            </span>
+              </span>
             </label>
-        </div>
-        {transferImage && (
+          </div>
+          {transferImage && (
             <div className="mt-2 relative w-full h-64 bg-gray-800 border border-yellow-400 rounded overflow-hidden">
-            <Image
+              <Image
                 src={URL.createObjectURL(transferImage)}
                 alt="Vista previa de la evidencia"
                 fill
                 style={{ objectFit: 'contain' }}
-            />
+              />
             </div>
-        )}
+          )}
         </div>
         <button 
           type="submit" 
