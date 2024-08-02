@@ -1,4 +1,4 @@
-// app/administracion-transferencias/page.tsx
+// app/administracion-inventario/page.tsx
 'use client';
 
 import { useSession } from 'next-auth/react';
@@ -14,7 +14,7 @@ type Category = {
   icon: string;
 };
 
-const AdminTransferenciasPage = () => {
+const AdminInventarioPage = () => {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
@@ -52,9 +52,9 @@ const AdminTransferenciasPage = () => {
     category.allowedRoles.includes(userRole as string)
   );
 
-  const transferenciasCategories = [
-    { name: 'Realizar transferencia', path: '/transferencias/realizar', icon: '↔️' },
-    { name: 'Historial de transferencias', path: '/transferencias/historial', icon: '🗄️' },
+  const inventarioCategories = [
+    { name: 'Agregar', path: '/administracion/inventario/agregar', icon: '➕' },
+    { name: 'Realizar', path: '/administracion/inventario/realizar', icon: '✅' },
   ];
 
   return (
@@ -62,13 +62,13 @@ const AdminTransferenciasPage = () => {
       <div className="p-4">
         {/* Título de la página */}
         <div className="bg-gray-900 rounded-lg p-4 mb-6 shadow-md">
-          <h1 className="text-3xl font-bold mb-4 text-center">Administración de Transferencias</h1>
+          <h1 className="text-3xl font-bold mb-4 text-center">Administración de Inventario</h1>
         </div>
 
-        {/* Categorías de administración de transferencias */}
+        {/* Categorías de administración de inventario */}
         <div className="bg-gray-900 rounded-lg p-4 mb-6 shadow-md">
           <div className="grid grid-cols-2 gap-4">
-            {transferenciasCategories.map((category, index) => (
+            {inventarioCategories.map((category, index) => (
               <Link 
                 href={category.path}
                 key={index}
@@ -86,4 +86,4 @@ const AdminTransferenciasPage = () => {
   );
 };
 
-export default AdminTransferenciasPage;
+export default AdminInventarioPage;

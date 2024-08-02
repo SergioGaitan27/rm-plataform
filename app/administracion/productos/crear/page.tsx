@@ -95,7 +95,7 @@ const CreateProductPage: React.FC = () => {
       [name]: value === '' ? undefined : 
         (name.includes('price') || name === 'cost' || name.includes('MinQty') || name === 'piecesPerBox') 
           ? (value === '' ? undefined : Number(value))
-          : value
+          : value.toUpperCase()
     }));
   };
 
@@ -103,7 +103,7 @@ const CreateProductPage: React.FC = () => {
     const { name, value } = e.target;
     setNewLocation(prev => ({
       ...prev,
-      [name]: name === 'quantity' ? (value === '' ? undefined : parseInt(value)) : value
+      [name]: name === 'quantity' ? (value === '' ? undefined : parseInt(value)) : value.toUpperCase()
     }));
   };
 

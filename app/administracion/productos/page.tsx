@@ -51,11 +51,13 @@ const ProductAdminPage = () => {
     category.allowedRoles.includes(userRole as string)
   );
 
+  // Define product categories with a new "Agregar Inventario" category
   const productCategories = [
     { name: 'Crear producto', path: '/administracion/productos/crear', icon: '🆕' },
     { name: 'Modificar producto', path: '/bajo-construccion', icon: '✏️' },
     { name: 'Eliminar producto', path: '/bajo-construccion', icon: '🗑️' },
-    { name: 'Transferencias', path: '/transferencias', icon: '↔️' }, // Nueva categoría añadida
+    { name: 'Transferencias', path: '/transferencias', icon: '↔️' }, 
+    { name: 'Inventario', path: '/administracion/inventario', icon: '📦' } // Nueva categoría añadida
   ];
 
   return (
