@@ -56,8 +56,7 @@ const ProductAdminPage = () => {
     { name: 'Crear producto', path: '/administracion/productos/crear', icon: '🆕' },
     { name: 'Modificar producto', path: '/bajo-construccion', icon: '✏️' },
     { name: 'Eliminar producto', path: '/bajo-construccion', icon: '🗑️' },
-    { name: 'Transferencias', path: '/transferencias', icon: '↔️' }, 
-    { name: 'Inventario', path: '/administracion/inventario', icon: '📦' } // Nueva categoría añadida
+     // Nueva categoría añadida
   ];
 
   return (

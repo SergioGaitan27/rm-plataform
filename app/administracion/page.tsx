@@ -58,6 +58,8 @@ const AdminPage = () => {
     { name: 'Productos', path: '/administracion/productos', icon: '📦' },
     { name: 'Negocios', path: '/administracion/negocios', icon: '🏢' },
     { name: 'Contenedores', path: '/administracion/contenedores', icon: '🚛' }, 
+    { name: 'Transferencias', path: '/transferencias', icon: '↔️' }, 
+    { name: 'Inventario', path: '/administracion/inventario', icon: '📦' }
   ];
 
   return (
