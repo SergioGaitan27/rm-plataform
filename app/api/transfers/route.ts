@@ -63,21 +63,6 @@ export async function POST(req: NextRequest) {
 
     const pdfUrl = await generateTransferPDF(transfers, evidenceImageUrl);
 
-    const newTransfer: ITransfer = new Transfer({
-      transfers: transfers.map(transfer => ({
-        productId: transfer.productId,
-        productName: transfer.productName,
-        productCode: transfer.productCode,
-        boxCode: transfer.boxCode,
-        fromLocation: transfer.fromLocation,
-        toLocation: transfer.toLocation,
-        quantity: transfer.quantity
-      })),
-      evidenceImageUrl,
-      pdfUrl
-    });
-    await newTransfer.save();
-
     console.log('Transfer successful, returning response');
     return NextResponse.json({ 
       message: 'Transferencias realizadas con éxito', 

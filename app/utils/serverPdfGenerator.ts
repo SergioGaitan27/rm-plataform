@@ -1,6 +1,5 @@
-import * as fs from 'fs-extra';
-import * as path from 'path';
 import pdfMake from 'pdfmake/build/pdfmake';
+import pdfFonts from 'pdfmake/build/vfs_fonts';
 import { TDocumentDefinitions, StyleDictionary } from 'pdfmake/interfaces';
 import fetch from 'node-fetch';
 
@@ -14,29 +13,7 @@ interface ITransferItem {
     quantity: number;
 }
 
-const pdfFonts = require('pdfmake/build/vfs_fonts');
-
-const robotoRegular = fs.readFileSync(path.join(process.cwd(), 'fonts', 'Roboto-Regular.ttf'));
-const robotoMedium = fs.readFileSync(path.join(process.cwd(), 'fonts', 'Roboto-Medium.ttf'));
-const robotoItalic = fs.readFileSync(path.join(process.cwd(), 'fonts', 'Roboto-Italic.ttf'));
-const robotoMediumItalic = fs.readFileSync(path.join(process.cwd(), 'fonts', 'Roboto-MediumItalic.ttf'));
-
-pdfMake.vfs = {
-    ...pdfFonts.pdfMake.vfs,
-    'Roboto-Regular.ttf': robotoRegular,
-    'Roboto-Medium.ttf': robotoMedium,
-    'Roboto-Italic.ttf': robotoItalic,
-    'Roboto-MediumItalic.ttf': robotoMediumItalic
-};
-
-pdfMake.fonts = {
-    Roboto: {
-      normal: 'Roboto-Regular.ttf',
-      bold: 'Roboto-Medium.ttf',
-      italics: 'Roboto-Italic.ttf',
-      bolditalics: 'Roboto-MediumItalic.ttf'
-    }
-};
+pdfMake.vfs = pdfFonts.pdfMake.vfs;
 
 async function getImageDataUrl(url: string): Promise<string> {
     const response = await fetch(url);
@@ -96,14 +73,8 @@ export async function generateTransferPDF(transfers: ITransferItem[], evidenceIm
   const pdfDoc = pdfMake.createPdf(docDefinition);
   
   return new Promise((resolve, reject) => {
-    pdfDoc.getBuffer((buffer) => {
-      const fileName = `transfer_${Date.now()}.pdf`;
-      const filePath = path.join(process.cwd(), 'public', 'pdfs', fileName);
-      
-      fs.ensureDirSync(path.dirname(filePath));
-      fs.writeFileSync(filePath, buffer);
-      
-      resolve(`/pdfs/${fileName}`);
+    pdfDoc.getBase64((data) => {
+      resolve(`data:application/pdf;base64,${data}`);
     });
   });
 }

@@ -189,8 +189,29 @@ const TransferenciaProductos = () => {
       }
 
       const responseData = await response.json();
+      const pdfBase64 = responseData.pdfUrl.split(',')[1]; // Extract the base64 part
+
+      // Convert base64 to Blob
+      const byteCharacters = atob(pdfBase64);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'application/pdf' });
+
+      // Create a URL for the Blob
+      const pdfUrl = URL.createObjectURL(blob);
+
+      // Open or download the PDF
+      const link = document.createElement('a');
+      link.href = pdfUrl;
+      link.setAttribute('download', 'TransferenciaProductos.pdf'); // Set filename for download
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
       setIsConfirmed(true);
-      window.open(responseData.pdfUrl, '_blank');
       setTimeout(() => {
         setTransferList([]);
         setTransferImage(null);
