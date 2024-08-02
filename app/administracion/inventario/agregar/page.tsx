@@ -21,34 +21,64 @@ interface Product {
   imageUrl?: string;
 }
 
+type Category = {
+  name: string;
+  allowedRoles: string[];
+  icon: string;
+};
+
 const AgregarInventario: React.FC = () => {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const response = await fetch('/api/products');
-        if (!response.ok) {
-          throw new Error('Error fetching products');
+    const initialize = async () => {
+      if (status === 'authenticated') {
+        try {
+          await Promise.all([fetchProducts(), fetchCategories()]);
+        } catch (error) {
+          console.error('Error initializing data:', error);
+          setError('Error al cargar los datos');
+        } finally {
+          setIsLoading(false);
         }
-        const data = await response.json();
-        setProducts(data);
-      } catch (error) {
-        console.error('Error:', error);
-      } finally {
-        setLoading(false);
+      } else if (status === 'unauthenticated') {
+        router.push('/login');
       }
     };
 
-    if (status === 'authenticated') {
-      fetchProducts();
+    initialize();
+  }, [status, router]);
+
+  const fetchProducts = async () => {
+    try {
+      const response = await fetch('/api/products');
+      if (!response.ok) throw new Error('Error fetching products');
+      const data = await response.json();
+      setProducts(data);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      throw new Error('Error al cargar los productos');
     }
-  }, [status]);
+  };
+
+  const fetchCategories = async () => {
+    // Simulating API call with setTimeout
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    setCategories([
+      { name: 'Punto de venta', allowedRoles: ['vendedor'], icon: '💰' },
+      { name: 'Créditos', allowedRoles: ['super_administrador', 'administrador'], icon: '💳' },
+      { name: 'Catálogo', allowedRoles: ['super_administrador', 'administrador'], icon: '📚' },
+      { name: 'Administración', allowedRoles: ['super_administrador', 'administrador'], icon: '⚙️' },
+      { name: 'Dashboard', allowedRoles: ['super_administrador', 'administrador'], icon: '🗂️' },
+    ]);
+  };
 
   useEffect(() => {
     const filtered = products.filter(product =>
@@ -59,25 +89,29 @@ const AgregarInventario: React.FC = () => {
     setFilteredProducts(filtered);
   }, [searchTerm, products]);
 
-  if (status === 'loading' || loading) {
+  if (status === 'loading' || isLoading) {
     return <LoadingSpinner />;
   }
 
-  if (status === 'unauthenticated' || !session) {
-    router.push('/login');
-    return null;
-  }
+  if (!session) return null;
 
   const handleNavigateToProductPage = (productId: string) => {
     router.push(`/administracion/inventario/agregar/${productId}`);
   };
 
+  const userRole = session.user?.role;
+  const userCategories = categories.filter(category =>
+    category.allowedRoles.includes(userRole as string)
+  );
+
   return (
     <div className="min-h-screen bg-black text-yellow-400 flex flex-col justify-between">
-      <div className="p-4">
+      <div className="p-4 flex-grow">
         <div className="bg-gray-900 rounded-lg p-4 mb-6 shadow-md">
           <h1 className="text-3xl font-bold text-center">Agregar Inventario</h1>
         </div>
+
+        {error && <p className="text-red-500 mb-4">{error}</p>}
 
         <div className="bg-gray-900 rounded-lg p-4 mb-6 shadow-md">
           <input
@@ -127,7 +161,7 @@ const AgregarInventario: React.FC = () => {
           </div>
         </div>
       </div>
-      <BottomNavBar categories={[]} />
+      <BottomNavBar categories={userCategories} />
     </div>
   );
 };

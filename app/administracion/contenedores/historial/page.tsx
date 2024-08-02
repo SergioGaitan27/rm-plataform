@@ -31,12 +31,22 @@ const HistorialContenedores = () => {
   const [categories, setCategories] = useState<Category[]>([]);
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/login');
-    } else if (status === 'authenticated') {
-      fetchContainers();
-      fetchCategories();
-    }
+    const initialize = async () => {
+      if (status === 'authenticated') {
+        try {
+          await Promise.all([fetchContainers(), fetchCategories()]);
+        } catch (error) {
+          console.error('Error initializing data:', error);
+          setError('Error al cargar los datos');
+        } finally {
+          setIsLoading(false);
+        }
+      } else if (status === 'unauthenticated') {
+        router.push('/login');
+      }
+    };
+
+    initialize();
   }, [status, router]);
 
   const fetchContainers = async () => {
@@ -47,9 +57,7 @@ const HistorialContenedores = () => {
       setContainers(data.data);
     } catch (error) {
       console.error('Error fetching containers:', error);
-      setError('Error al cargar el historial de contenedores');
-    } finally {
-      setIsLoading(false);
+      throw new Error('Error al cargar el historial de contenedores');
     }
   };
 
@@ -78,8 +86,7 @@ const HistorialContenedores = () => {
 
   return (
     <div className="min-h-screen bg-black text-yellow-400 flex flex-col justify-between">
-      <div className="p-4 pb-24"> {/* Increased bottom padding */}
-        {/* Título de la página */}
+      <div className="p-4 pb-24">
         <div className="bg-gray-900 rounded-lg p-4 mb-6 shadow-md">
           <h1 className="text-3xl font-bold text-center mb-4">Historial de Contenedores</h1>
         </div>

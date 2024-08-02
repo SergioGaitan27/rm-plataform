@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
+import BottomNavBar from '@/components/BottomNavBar';
 
 const BarcodeScanner = dynamic(() => import('@/components/BarcodeScanner'), {
   ssr: false,
@@ -36,6 +37,12 @@ interface ProductForm {
 
 type PrecioPlaceholders = {
   [key: number]: string;
+};
+
+type Category = {
+  name: string;
+  allowedRoles: string[];
+  icon: string;
 };
 
 const precioPlaceholders: PrecioPlaceholders = {
@@ -70,9 +77,31 @@ const CreateProductPage: React.FC = () => {
   const [newLocation, setNewLocation] = useState<StockLocation>({ location: '', quantity: undefined });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    const initialize = async () => {
+      if (status === 'authenticated') {
+        // Simulando una llamada a la API con setTimeout
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        setCategories([
+          { name: 'Punto de venta', allowedRoles: ['vendedor'], icon: '💰' },
+          { name: 'Créditos', allowedRoles: ['super_administrador', 'administrador'], icon: '💳' },
+          { name: 'Catálogo', allowedRoles: ['super_administrador', 'administrador'], icon: '📚' },
+          { name: 'Administración', allowedRoles: ['super_administrador', 'administrador'], icon: '⚙️' },
+          { name: 'Dashboard', allowedRoles: ['super_administrador', 'administrador'], icon: '🗂️' },
+        ]);
+        setIsLoading(false);
+      } else if (status === 'unauthenticated') {
+        router.push('/login');
+      }
+    };
+  
+    initialize();
+  }, [status, router]);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -80,10 +109,10 @@ const CreateProductPage: React.FC = () => {
     }
   }, [status, router]);
 
-  if (status === 'loading') {
+  if (status === 'loading' || isLoading) {
     return <LoadingSpinner />;
   }
-
+  
   if (!session) {
     return null;
   }
@@ -218,210 +247,222 @@ const CreateProductPage: React.FC = () => {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-black text-yellow-400 p-4">
-      <div className="max-w-md mx-auto relative">
-        <h1 className="text-2xl font-bold mb-6">Crear Producto</h1>
-        {error && <p className="text-red-500 mb-4">{error}</p>}
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Datos del Producto */}
-          <fieldset className="border border-yellow-400 rounded p-4">
-            <legend className="text-lg font-semibold">Datos del Producto</legend>
-            <div className="space-y-2">
-              <input
-                type="text"
-                name="boxCode"
-                value={product.boxCode}
-                onChange={handleInputChange}
-                placeholder="Código de caja"
-                className="w-full p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400"
-                required
-              />
-              <div className="flex space-x-2">
-                <input
-                  type="text"
-                  name="productCode"
-                  value={product.productCode}
-                  onChange={handleInputChange}
-                  placeholder="Código de producto"
-                  className="flex-grow p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowBarcodeScanner(true)}
-                  className="bg-yellow-400 text-black p-2 rounded"
-                >
-                  Escanear
-                </button>
-              </div>
-              <div className="space-y-2">
-                {showBarcodeScanner && <BarcodeScanner onScan={handleBarcodeScanned} />}
-              </div>
-              <input
-                type="text"
-                name="name"
-                value={product.name}
-                onChange={handleInputChange}
-                placeholder="Nombre del producto"
-                className="w-full p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400"
-                required
-              />
-              <input
-                type="number"
-                name="piecesPerBox"
-                value={getInputValue(product.piecesPerBox)}
-                onChange={handleInputChange}
-                placeholder="Piezas por caja"
-                className="w-full p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400"
-                required
-              />
-            </div>
-          </fieldset>
+  const userRole = session.user?.role;
+  const userCategories = categories.filter(category =>
+    category.allowedRoles.includes(userRole as string)
+  );
 
-          {/* Precios */}
-          <fieldset className="border border-yellow-400 rounded p-4">
-            <legend className="text-lg font-semibold">Precios</legend>
-            <div className="space-y-2">
-              <input
-                type="number"
-                name="cost"
-                value={getInputValue(product.cost)}
-                onChange={handleInputChange}
-                placeholder="Costo"
-                className="w-full p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400 placeholder-yellow-400 placeholder-opacity-50"
-                required
-                step="0.01"
-              />
-              {[1, 2, 3].map((num) => (
-                <div key={num} className="flex space-x-2">
+  return (
+    <>
+    {!isLoading && (
+      <div className="min-h-screen bg-black text-yellow-400 flex flex-col justify-between">
+        <div className="min-h-screen bg-black text-yellow-400 p-4">
+          <div className="max-w-md mx-auto relative">
+            <h1 className="text-2xl font-bold mb-6">Crear Producto</h1>
+            {error && <p className="text-red-500 mb-4">{error}</p>}
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Datos del Producto */}
+              <fieldset className="border border-yellow-400 rounded p-4">
+                <legend className="text-lg font-semibold">Datos del Producto</legend>
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    name="boxCode"
+                    value={product.boxCode}
+                    onChange={handleInputChange}
+                    placeholder="Código de caja"
+                    className="w-full p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400"
+                    required
+                  />
+                  <div className="flex space-x-2">
+                    <input
+                      type="text"
+                      name="productCode"
+                      value={product.productCode}
+                      onChange={handleInputChange}
+                      placeholder="Código de producto"
+                      className="flex-grow p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowBarcodeScanner(true)}
+                      className="bg-yellow-400 text-black p-2 rounded"
+                    >
+                      Escanear
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {showBarcodeScanner && <BarcodeScanner onScan={handleBarcodeScanned} />}
+                  </div>
+                  <input
+                    type="text"
+                    name="name"
+                    value={product.name}
+                    onChange={handleInputChange}
+                    placeholder="Nombre del producto"
+                    className="w-full p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400"
+                    required
+                  />
                   <input
                     type="number"
-                    name={`price${num}`}
-                    value={getInputValue(product[`price${num}` as keyof ProductForm])}
+                    name="piecesPerBox"
+                    value={getInputValue(product.piecesPerBox)}
                     onChange={handleInputChange}
-                    placeholder={precioPlaceholders[num] || `Precio ${num}`}
-                    className="w-1/2 p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400 placeholder-yellow-400 placeholder-opacity-50"
+                    placeholder="Piezas por caja"
+                    className="w-full p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400"
                     required
+                  />
+                </div>
+              </fieldset>
+
+              {/* Precios */}
+              <fieldset className="border border-yellow-400 rounded p-4">
+                <legend className="text-lg font-semibold">Precios</legend>
+                <div className="space-y-2">
+                  <input
+                    type="number"
+                    name="cost"
+                    value={getInputValue(product.cost)}
+                    onChange={handleInputChange}
+                    placeholder="Costo"
+                    className="w-full p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400 placeholder-yellow-400 placeholder-opacity-50"
+                    required
+                    step="0.01"
+                  />
+                  {[1, 2, 3].map((num) => (
+                    <div key={num} className="flex space-x-2">
+                      <input
+                        type="number"
+                        name={`price${num}`}
+                        value={getInputValue(product[`price${num}` as keyof ProductForm])}
+                        onChange={handleInputChange}
+                        placeholder={precioPlaceholders[num] || `Precio ${num}`}
+                        className="w-1/2 p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400 placeholder-yellow-400 placeholder-opacity-50"
+                        required
+                        step="0.01"
+                      />
+                      <input
+                        type="number"
+                        name={`price${num}MinQty`}
+                        value={getInputValue(product[`price${num}MinQty` as keyof ProductForm])}
+                        onChange={handleInputChange}
+                        placeholder={`Cantidad mínima`}
+                        className="w-1/2 p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400 placeholder-yellow-400 placeholder-opacity-50"
+                        required
+                      />
+                    </div>
+                  ))}
+                  <input
+                    type="number"
+                    name="price4"
+                    value={getInputValue(product.price4)}
+                    onChange={handleInputChange}
+                    placeholder={precioPlaceholders[4]}
+                    className="w-full p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400 placeholder-yellow-400 placeholder-opacity-50"
                     step="0.01"
                   />
                   <input
                     type="number"
-                    name={`price${num}MinQty`}
-                    value={getInputValue(product[`price${num}MinQty` as keyof ProductForm])}
+                    name="price5"
+                    value={getInputValue(product.price5)}
                     onChange={handleInputChange}
-                    placeholder={`Cantidad mínima`}
-                    className="w-1/2 p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400 placeholder-yellow-400 placeholder-opacity-50"
-                    required
+                    placeholder={precioPlaceholders[5]}
+                    className="w-full p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400 placeholder-yellow-400 placeholder-opacity-50"
+                    step="0.01"
                   />
                 </div>
-              ))}
-              <input
-                type="number"
-                name="price4"
-                value={getInputValue(product.price4)}
-                onChange={handleInputChange}
-                placeholder={precioPlaceholders[4]}
-                className="w-full p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400 placeholder-yellow-400 placeholder-opacity-50"
-                step="0.01"
-              />
-              <input
-                type="number"
-                name="price5"
-                value={getInputValue(product.price5)}
-                onChange={handleInputChange}
-                placeholder={precioPlaceholders[5]}
-                className="w-full p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400 placeholder-yellow-400 placeholder-opacity-50"
-                step="0.01"
-              />
-            </div>
-          </fieldset>
+              </fieldset>
 
-          {/* Ubicaciones de Stock */}
-          <fieldset className="border border-yellow-400 rounded p-4">
-            <legend className="text-lg font-semibold">Ubicaciones de Stock</legend>
-            <div className="space-y-2">
-              {product.stockLocations.map((loc, index) => (
-                <div key={index} className="flex space-x-2 mb-2">
-                  <span>{loc.location}: {loc.quantity ?? 'N/A'}</span>
+              {/* Ubicaciones de Stock */}
+              <fieldset className="border border-yellow-400 rounded p-4">
+                <legend className="text-lg font-semibold">Ubicaciones de Stock</legend>
+                <div className="space-y-2">
+                  {product.stockLocations.map((loc, index) => (
+                    <div key={index} className="flex space-x-2 mb-2">
+                      <span>{loc.location}: {loc.quantity ?? 'N/A'}</span>
+                    </div>
+                  ))}
+                  <div className="flex space-x-2">
+                    <input
+                      type="text"
+                      name="location"
+                      value={newLocation.location}
+                      onChange={handleLocationChange}
+                      placeholder="Ubicación"
+                      className="w-1/2 p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400 placeholder-yellow-400 placeholder-opacity-50"
+                    />
+                    <input
+                      type="number"
+                      name="quantity"
+                      value={getInputValue(newLocation.quantity)}
+                      onChange={handleLocationChange}
+                      placeholder="Cantidad"
+                      className="w-1/4 p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400 placeholder-yellow-400 placeholder-opacity-50"
+                    />
+                    <button
+                      type="button"
+                      onClick={addStockLocation}
+                      className="bg-yellow-400 text-black p-2 rounded hover:bg-yellow-500 transition-colors"
+                    >
+                      Agregar
+                    </button>
+                  </div>
                 </div>
-              ))}
-              <div className="flex space-x-2">
-                <input
-                  type="text"
-                  name="location"
-                  value={newLocation.location}
-                  onChange={handleLocationChange}
-                  placeholder="Ubicación"
-                  className="w-1/2 p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400 placeholder-yellow-400 placeholder-opacity-50"
-                />
-                <input
-                  type="number"
-                  name="quantity"
-                  value={getInputValue(newLocation.quantity)}
-                  onChange={handleLocationChange}
-                  placeholder="Cantidad"
-                  className="w-1/4 p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400 placeholder-yellow-400 placeholder-opacity-50"
-                />
-                <button
-                  type="button"
-                  onClick={addStockLocation}
-                  className="bg-yellow-400 text-black p-2 rounded hover:bg-yellow-500 transition-colors"
-                >
-                  Agregar
-                </button>
+              </fieldset>
+
+              {/* Imagen del Producto */}
+              <fieldset className="border border-yellow-400 rounded p-4">
+                <legend className="text-lg font-semibold">Imagen del Producto</legend>
+                <div className="space-y-2">
+                  <input
+                    type="file"
+                    id="image"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="w-full p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400"
+                  />
+                  {imageFile && (
+                    <div className="mt-2 relative w-full h-64">
+                      <Image
+                        src={URL.createObjectURL(imageFile)}
+                        alt="Vista previa del producto"
+                        fill
+                        style={{ objectFit: 'contain' }}
+                      />
+                    </div>
+                  )}
+                </div>
+              </fieldset>
+
+              <button 
+                type="submit" 
+                className="w-full bg-yellow-400 text-black p-2 rounded hover:bg-yellow-500 transition-colors"
+                disabled={isLoading}
+              >
+                {isLoading ? 'Guardando...' : 'Guardar Producto'}
+              </button>
+            </form>
+
+            {isLoading && (
+              <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-yellow-400"></div>
               </div>
-            </div>
-          </fieldset>
+            )}
 
-          {/* Imagen del Producto */}
-          <fieldset className="border border-yellow-400 rounded p-4">
-            <legend className="text-lg font-semibold">Imagen del Producto</legend>
-            <div className="space-y-2">
-              <input
-                type="file"
-                id="image"
-                accept="image/*"
-                onChange={handleImageChange}
-                className="w-full p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400"
-              />
-              {imageFile && (
-                <div className="mt-2 relative w-full h-64">
-                  <Image
-                    src={URL.createObjectURL(imageFile)}
-                    alt="Vista previa del producto"
-                    fill
-                    style={{ objectFit: 'contain' }}
-                  />
+            {isConfirmed && (
+              <div className="fixed inset-0 flex items-center justify-center z-50">
+                <div className="bg-white p-6 rounded-lg shadow-xl">
+                  <p className="text-green-500 text-xl font-bold">¡Producto guardado exitosamente!</p>
                 </div>
-              )}
-            </div>
-          </fieldset>
-
-          <button 
-            type="submit" 
-            className="w-full bg-yellow-400 text-black p-2 rounded hover:bg-yellow-500 transition-colors"
-            disabled={isLoading}
-          >
-            {isLoading ? 'Guardando...' : 'Guardar Producto'}
-          </button>
-        </form>
-
-        {isLoading && (
-          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-yellow-400"></div>
-          </div>
-        )}
-
-        {isConfirmed && (
-          <div className="fixed inset-0 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-lg shadow-xl">
-              <p className="text-green-500 text-xl font-bold">¡Producto guardado exitosamente!</p>
-            </div>
-          </div>
-        )}
-      </div>  
-    </div>
+              </div>
+            )}
+          </div> 
+        </div>
+        <BottomNavBar categories={userCategories} />
+      </div>
+    )}
+  </>
   );
 };
 

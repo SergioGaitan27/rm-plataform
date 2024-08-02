@@ -54,7 +54,8 @@ const AdminInventarioPage = () => {
 
   const inventarioCategories = [
     { name: 'Agregar', path: '/administracion/inventario/agregar', icon: '➕' },
-    { name: 'Realizar', path: '/administracion/inventario/realizar', icon: '✅' },
+    // { name: 'Realizar', path: '/administracion/inventario/realizar', icon: '✅' },
+    { name: 'Realizar', path: '/bajo-construccion', icon: '✅' },
   ];
 
   return (
