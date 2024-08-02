@@ -23,21 +23,14 @@ interface IProduct {
 export async function POST(req: NextRequest, { params }: { params: { productId: string } }) {
   try {
     await connectDB();
-    console.log("Conectado a la base de datos");
 
     const { productId } = params;
     const body = await req.json();
     const { quantity, location } = body;
 
-    console.log(`Actualizando stock para el producto: ${productId}`);
-    console.log("Datos recibidos:", body);
-
     if (!quantity || !location) {
-      console.log("Datos no válidos:", body);
       return NextResponse.json({ success: false, message: 'Datos no válidos' }, { status: 400 });
     }
-
-    // Convertir quantity a número
     const numericQuantity = Number(quantity);
 
     if (isNaN(numericQuantity)) {
@@ -47,7 +40,6 @@ export async function POST(req: NextRequest, { params }: { params: { productId: 
     const product = await Product.findById(productId) as IProduct | null;
 
     if (!product) {
-      console.log("Producto no encontrado");
       return NextResponse.json({ success: false, message: 'Producto no encontrado' }, { status: 404 });
     }
 
@@ -64,9 +56,6 @@ export async function POST(req: NextRequest, { params }: { params: { productId: 
       { stockLocations: product.stockLocations },
       { new: true }
     );
-
-    console.log("Producto actualizado:", updatedProduct);
-
     return NextResponse.json({
       success: true,
       message: 'Stock actualizado correctamente',
@@ -86,19 +75,13 @@ export async function POST(req: NextRequest, { params }: { params: { productId: 
 export async function GET(req: NextRequest, { params }: { params: { productId: string } }) {
   try {
     await connectDB();
-    console.log("Conectado a la base de datos");
-
     const { productId } = params;
-    console.log(`Buscando el producto con ID: ${productId}`);
 
     const product = await Product.findById(productId);
 
     if (!product) {
-      console.log("Producto no encontrado");
       return NextResponse.json({ success: false, message: 'Producto no encontrado' }, { status: 404 });
     }
-
-    console.log("Producto encontrado:", product);
 
     return NextResponse.json({ success: true, data: product }, { status: 200 });
   } catch (error: unknown) {

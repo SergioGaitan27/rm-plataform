@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import BottomNavBar from '@/components/BottomNavBar';
-import Image from 'next/image';
 
 // Interfaz para la estructura de una transferencia
 interface ITransfer {
@@ -20,9 +19,14 @@ interface ITransfer {
     toLocation: string;
     quantity: number;
   }>;
-  evidenceImageUrl: string;
   date: string;
 }
+
+type Category = {
+  name: string;
+  allowedRoles: string[];
+  icon: string;
+};
 
 const HistorialTransferencias = () => {
   const { data: session, status } = useSession();
@@ -33,13 +37,25 @@ const HistorialTransferencias = () => {
   const [error, setError] = useState<string | null>(null);
   const [dateFilter, setDateFilter] = useState('');
   const [destinationFilter, setDestinationFilter] = useState('');
+  const [categories, setCategories] = useState<Category[]>([]);
 
   useEffect(() => {
-    if (status === 'authenticated') {
-      fetchTransfers();
-    } else if (status === 'unauthenticated') {
-      router.push('/login');
-    }
+    const initialize = async () => {
+      if (status === 'authenticated') {
+        try {
+          await Promise.all([fetchTransfers(), fetchCategories()]);
+        } catch (error) {
+          console.error('Error initializing data:', error);
+          setError('Error al cargar los datos');
+        } finally {
+          setIsLoading(false);
+        }
+      } else if (status === 'unauthenticated') {
+        router.push('/login');
+      }
+    };
+
+    initialize();
   }, [status, router]);
 
   useEffect(() => {
@@ -55,10 +71,20 @@ const HistorialTransferencias = () => {
       setTransfers(data);
     } catch (error) {
       console.error('Error al cargar las transferencias:', error);
-      setError('Error al cargar el historial de transferencias');
-    } finally {
-      setIsLoading(false);
+      throw new Error('Error al cargar el historial de transferencias');
     }
+  };
+
+  const fetchCategories = async () => {
+    // Simulating API call with setTimeout
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    setCategories([
+      { name: 'Punto de venta', allowedRoles: ['vendedor'], icon: '💰' },
+      { name: 'Créditos', allowedRoles: ['super_administrador', 'administrador'], icon: '💳' },
+      { name: 'Catálogo', allowedRoles: ['super_administrador', 'administrador'], icon: '📚' },
+      { name: 'Administración', allowedRoles: ['super_administrador', 'administrador'], icon: '⚙️' },
+      { name: 'Dashboard', allowedRoles: ['super_administrador', 'administrador'], icon: '🗂️' },
+    ]);
   };
 
   // Función para filtrar las transferencias
@@ -73,7 +99,10 @@ const HistorialTransferencias = () => {
 
     if (destinationFilter) {
       filtered = filtered.filter(transfer => 
-        transfer.transfers.some(t => t.toLocation.toLowerCase().includes(destinationFilter.toLowerCase()))
+        transfer.transfers.some(t => 
+          t.toLocation.toLowerCase().includes(destinationFilter.toLowerCase()) ||
+          t.fromLocation.toLowerCase().includes(destinationFilter.toLowerCase())
+        )
       );
     }
 
@@ -82,6 +111,11 @@ const HistorialTransferencias = () => {
 
   if (status === 'loading' || isLoading) return <LoadingSpinner />;
   if (!session) return null;
+
+  const userRole = session.user?.role;
+  const userCategories = categories.filter(category =>
+    category.allowedRoles.includes(userRole as string)
+  );
 
   return (
     <div className="min-h-screen bg-black text-yellow-400 flex flex-col justify-between">
@@ -100,7 +134,7 @@ const HistorialTransferencias = () => {
           />
           <input
             type="text"
-            placeholder="Filtrar por destino"
+            placeholder="Filtrar por origen o destino"
             value={destinationFilter}
             onChange={(e) => setDestinationFilter(e.target.value)}
             className="bg-gray-800 text-yellow-400 rounded px-3 py-2 w-full sm:w-auto"
@@ -111,57 +145,40 @@ const HistorialTransferencias = () => {
         {filteredTransfers.length === 0 ? (
           <p>No hay transferencias en el historial que coincidan con los filtros.</p>
         ) : (
-          <ul className="space-y-4">
-            {filteredTransfers.map((transfer) => (
-              <li key={transfer._id} className="bg-gray-800 rounded-lg p-4 shadow-lg">
-                <h3 className="text-xl font-semibold mb-2 text-yellow-400">Fecha: {new Date(transfer.date).toLocaleString()}</h3>
-                <div className="grid grid-cols-2 gap-4 text-sm mb-4">
-                  <InfoItem label="Total de productos:" value={transfer.transfers.length.toString()} />
-                  <InfoItem label="Total de unidades:" value={transfer.transfers.reduce((acc, t) => acc + t.quantity, 0).toString()} />
-                </div>
-                <div className="mb-4">
-                  <h4 className="font-semibold mb-2">Productos transferidos:</h4>
-                  <ul className="list-disc list-inside">
-                    {transfer.transfers.map((t, index) => (
-                      <li key={index}>
-                        {t.productName} - De {t.fromLocation} a {t.toLocation} ({t.quantity} unidades)
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                {transfer.evidenceImageUrl && (
-                  <div className="mb-4">
-                    <h4 className="font-semibold mb-2">Evidencia:</h4>
-                    <div className="relative w-full h-40">
-                      <Image
-                        src={transfer.evidenceImageUrl}
-                        alt="Evidencia de transferencia"
-                        fill
-                        style={{ objectFit: 'cover' }}
-                        className="rounded"
-                      />
-                    </div>
+          <ul className="space-y-4 text-lg">
+            {filteredTransfers.map((transfer) => {
+              const transferDate = new Date(transfer.date);
+              const origenDestino = transfer.transfers.map(t => `${t.fromLocation} → ${t.toLocation}`);
+              const uniqueOrigenDestino = Array.from(new Set(origenDestino));
+              return (
+                <li key={transfer._id} className="bg-gray-800 rounded-lg p-4 shadow-lg">
+                  <div className="grid grid-cols-2 text-lg mb-4">
+                    <InfoItem label="Fecha:" value={transferDate.toLocaleDateString()} />
+                    <InfoItem label="Hora:" value={transferDate.toLocaleTimeString()} />
+                    <InfoItem label="Total de productos:" value={transfer.transfers.length.toString()} />
+                    <InfoItem label="Total de unidades:" value={transfer.transfers.reduce((acc, t) => acc + t.quantity, 0).toString()} />
+                    <InfoItem label="Origen → Destino:" value={uniqueOrigenDestino.join(', ')} />
                   </div>
-                )}
-                <Link 
-                  href={`/transferencias/historial/${transfer._id}`}
-                  className="mt-4 inline-block bg-yellow-400 text-gray-900 px-4 py-2 rounded hover:bg-yellow-300 transition-colors"
-                >
-                  Ver detalles
-                </Link>
-              </li>
-            ))}
+                  <Link 
+                    href={`/transferencias/historial/${transfer._id}`}
+                    className="mt-4 inline-block bg-yellow-400 text-gray-900 px-4 py-2 rounded hover:bg-yellow-300 transition-colors"
+                  >
+                    Ver detalles
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>
-      <BottomNavBar categories={[]} />
+      <BottomNavBar categories={userCategories} />
     </div>
   );
 };
 
 const InfoItem = ({ label, value }: { label: string; value: string }) => (
   <div>
-    <p className="text-gray-400 text-xs">{label}</p>
+    <p className="text-gray-400 text-base">{label}</p>
     <p className="font-semibold">{value}</p>
   </div>
 );

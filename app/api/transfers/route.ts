@@ -15,12 +15,10 @@ interface ITransferItem {
 }
 
 export async function POST(req: NextRequest) {
-  console.log('POST request received to /api/transfers');
   try {
     await connectDB();
 
     const body = await req.json();
-    console.log('Request body:', body);
     const { transfers, evidenceImageUrl } = body as { transfers: ITransferItem[], evidenceImageUrl: string };
 
     for (const transfer of transfers) {
@@ -63,7 +61,6 @@ export async function POST(req: NextRequest) {
 
     const pdfUrl = await generateTransferPDF(transfers, evidenceImageUrl);
 
-    console.log('Transfer successful, returning response');
     return NextResponse.json({ 
       message: 'Transferencias realizadas con éxito', 
       pdfUrl 

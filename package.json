@@ -27,6 +27,7 @@
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/fs-extra": "^11.0.4",
+    "@types/mongoose": "^5.11.97",
     "@types/node": "^20.14.13",
     "@types/node-fetch": "^2.6.11",
     "@types/pdfmake": "^0.2.9",

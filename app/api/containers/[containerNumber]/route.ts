@@ -5,16 +5,12 @@ import Container, { IProduct } from '@/models/containerModel';
 export async function GET(req: NextRequest, { params }: { params: { containerNumber: string } }) {
   try {
     await connectDB();
-    console.log("Conectado a la base de datos");
 
     const { containerNumber } = params;
-    console.log(`Buscando el contenedor con número: ${containerNumber}`);
 
     const container = await Container.findOne({ containerNumber });
-    console.log("Resultado de la búsqueda:", container);
 
     if (!container) {
-      console.log("Contenedor no encontrado");
       return NextResponse.json({ success: false, message: 'Contenedor no encontrado' }, { status: 404 });
     }
 
@@ -31,14 +27,11 @@ export async function GET(req: NextRequest, { params }: { params: { containerNum
 export async function PUT(req: NextRequest, { params }: { params: { containerNumber: string } }) {
   try {
     await connectDB();
-    console.log("Conectado a la base de datos");
 
     const { containerNumber } = params;
     const body = await req.json();
-    console.log("Datos recibidos:", body);
 
     if (body.status !== 'received' || !Array.isArray(body.products)) {
-      console.log("Datos no válidos:", body);
       return NextResponse.json({ success: false, message: 'Datos no válidos' }, { status: 400 });
     }
 
@@ -61,9 +54,6 @@ export async function PUT(req: NextRequest, { params }: { params: { containerNum
     const totalExpectedBoxes = updatedProducts.reduce((sum: number, product: IProduct) => sum + product.expectedBoxes, 0);
     const totalReceivedBoxes = updatedProducts.reduce((sum: number, product: IProduct) => sum + product.receivedBoxes, 0);
 
-    console.log("Total de cajas esperadas:", totalExpectedBoxes);
-    console.log("Total de cajas recibidas:", totalReceivedBoxes);
-
     const updatedContainer = await Container.findOneAndUpdate(
       { containerNumber },
       { 
@@ -80,8 +70,6 @@ export async function PUT(req: NextRequest, { params }: { params: { containerNum
     if (!updatedContainer) {
       return NextResponse.json({ success: false, message: 'Contenedor no encontrado' }, { status: 404 });
     }
-
-    console.log("Contenedor actualizado:", updatedContainer);
 
     return NextResponse.json({
       success: true,

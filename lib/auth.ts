@@ -18,7 +18,6 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         try {
           if (!credentials?.email || !credentials?.password) {
-            console.log("Email or password missing");
             throw new Error("InvalidCredentials");
           }
     
@@ -29,7 +28,6 @@ export const authOptions: NextAuthOptions = {
           }).select("+password");
         
           if (!user) {
-            console.log("User not found");
             throw new Error("InvalidCredentials");
           }
         
@@ -39,11 +37,8 @@ export const authOptions: NextAuthOptions = {
           );
         
           if (!passwordMatch) {
-            console.log("Password does not match");
             throw new Error("InvalidCredentials");
           }
-    
-          console.log("Authentication successful");
           return {
             id: user._id.toString(),
             email: user.email,
@@ -89,8 +84,7 @@ export const authOptions: NextAuthOptions = {
   jwt: {
     maxAge: 120 * 60,
   },
-  secret: process.env.AUTH_SECRET,
-  debug: process.env.NODE_ENV === 'development',
+  secret: process.env.AUTH_SECRET
 };
 
 export default authOptions;

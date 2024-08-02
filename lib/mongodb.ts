@@ -8,13 +8,10 @@ if (!MONGODB_URI) {
 
 export const connectDB = async () => {
   try {
-    console.log("Intentando conectar a MongoDB...");
     const { connection } = await mongoose.connect(MONGODB_URI as string);
     if (connection.readyState === 1) {
-      console.log("Conexión exitosa a MongoDB");
       return Promise.resolve(true);
     }
-    console.log("Fallo al conectar a MongoDB. Estado de conexión:", connection.readyState);
     return Promise.reject("Fallo al conectar a MongoDB");
   } catch (error) {
     console.error("Error al conectar a MongoDB:", error);
