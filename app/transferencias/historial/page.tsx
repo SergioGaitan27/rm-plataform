@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';  // Cambiado de 'next/router' a 'next/navigation'
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import BottomNavBar from '@/components/BottomNavBar';
@@ -143,7 +143,7 @@ const HistorialTransferencias: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-black text-yellow-400 flex flex-col justify-between">
-      <div className="p-4 pb-24">
+      <div className="p-4 pb-24 flex-grow">
         <div className="bg-gray-900 rounded-lg p-4 mb-6 shadow-md">
           <h1 className="text-3xl font-bold text-center mb-4">Historial de Transferencias</h1>
         </div>
@@ -221,6 +221,7 @@ const HistorialTransferencias: React.FC = () => {
           </ul>
         )}
       </div>
+      <BottomNavBar categories={userCategories} />
     </div>
   );
 };

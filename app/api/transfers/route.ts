@@ -58,6 +58,12 @@ export async function POST(req: NextRequest) {
 
       await product.save();
     }
+    const newTransfer = new Transfer({
+      transfers: transfers,
+      evidenceImageUrl: evidenceImageUrl
+    });
+
+    await newTransfer.save();
 
     const pdfUrl = await generateTransferPDF(transfers, evidenceImageUrl);
 

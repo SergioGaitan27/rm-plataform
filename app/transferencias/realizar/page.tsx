@@ -300,7 +300,7 @@ const TransferenciaProductos = () => {
               <option value="">Seleccione ubicación origen</option>
               {selectedProduct.stockLocations.map((loc, index) => (
                 <option key={index} value={loc.location}>
-                  {loc.location} (Cantidad: {loc.quantity})
+                  {loc.location} | Cantidad: {loc.quantity}
                 </option>
               ))}
             </select>
@@ -320,8 +320,8 @@ const TransferenciaProductos = () => {
                 <option value="">Seleccione ubicación destino</option>
                 {selectedProduct.stockLocations.map((loc, index) => (
                   <option key={index} value={loc.location}>
-                    {loc.location}
-                  </option>
+                  {loc.location} | Cantidad: {loc.quantity}
+                </option>
                 ))}
                 <option value="new">+ Agregar nueva ubicación</option>
               </select>
