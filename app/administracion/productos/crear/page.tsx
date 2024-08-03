@@ -256,7 +256,7 @@ const CreateProductPage: React.FC = () => {
     <>
     {!isLoading && (
       <div className="min-h-screen bg-black text-yellow-400 flex flex-col justify-between">
-        <div className="min-h-screen bg-black text-yellow-400 p-4">
+        <div className="min-h-screen bg-black text-yellow-400 p-4 mb-[120px]">
           <div className="max-w-md mx-auto relative">
             <h1 className="text-2xl font-bold mb-6">Crear Producto</h1>
             {error && <p className="text-red-500 mb-4">{error}</p>}
@@ -412,7 +412,7 @@ const CreateProductPage: React.FC = () => {
               </fieldset>
 
               {/* Imagen del Producto */}
-              <fieldset className="border border-yellow-400 rounded p-4 mb-20">
+              <fieldset className="border border-yellow-400 rounded p-4">
                 <legend className="text-lg font-semibold">Imagen del Producto</legend>
                 <div className="space-y-2">
                   <input
