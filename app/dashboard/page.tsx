@@ -61,7 +61,7 @@ const Dashboard = () => {
     'Catálogo': 'catalogo',
     'Administración': 'administracion',
     'Configuración': 'configuracion',
-    'Punto de venta': 'punto-de-venta',
+    'Punto de venta': 'bajo-construccion',
     'Dashboard': 'dashboard'
   };
 
