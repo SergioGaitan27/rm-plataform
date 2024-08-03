@@ -27,7 +27,7 @@ const Dashboard = () => {
       setCategories([
         { name: 'Punto de venta', allowedRoles: ['vendedor'], icon: '💰' },
         { name: 'Créditos', allowedRoles: ['super_administrador', 'administrador'], icon: '💳' },
-        { name: 'Catálogo', allowedRoles: ['super_administrador', 'administrador'], icon: '📚' },
+        { name: 'Catálogo', allowedRoles: ['super_administrador', 'administrador', 'vendedor'], icon: '📚' },
         { name: 'Administración', allowedRoles: ['super_administrador', 'administrador'], icon: '⚙️' },
         // { name: 'Configuración', allowedRoles: ['super_administrador', 'administrador'], icon: '🔧' },
       ]);
