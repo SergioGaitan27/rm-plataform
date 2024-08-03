@@ -412,7 +412,7 @@ const CreateProductPage: React.FC = () => {
               </fieldset>
 
               {/* Imagen del Producto */}
-              <fieldset className="border border-yellow-400 rounded p-4">
+              <fieldset className="border border-yellow-400 rounded p-4 mb-20">
                 <legend className="text-lg font-semibold">Imagen del Producto</legend>
                 <div className="space-y-2">
                   <input
