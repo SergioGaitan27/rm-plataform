@@ -5,8 +5,18 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import dynamic from 'next/dynamic';
-import Image from 'next/image';
 import BottomNavBar from '@/components/BottomNavBar';
+import { Cloudinary } from "@cloudinary/url-gen";
+import { AdvancedImage } from '@cloudinary/react';
+import { fill } from "@cloudinary/url-gen/actions/resize";
+import { quality } from "@cloudinary/url-gen/actions/delivery";
+import imageCompression from 'browser-image-compression';
+
+const cld = new Cloudinary({
+  cloud: {
+    cloudName: 'dpsrtoyp7'
+  }
+});
 
 const BarcodeScanner = dynamic(() => import('@/components/BarcodeScanner'), {
   ssr: false,
@@ -84,6 +94,8 @@ const CreateProductPage: React.FC = () => {
   const [showPrices, setShowPrices] = useState(false);
   const [boxCodeExists, setBoxCodeExists] = useState(false);
   const [productCodeExists, setProductCodeExists] = useState(false);
+  const [imagePublicId, setImagePublicId] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   useEffect(() => {
     const initialize = async () => {
@@ -174,9 +186,54 @@ const CreateProductPage: React.FC = () => {
     return value.toString();
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setImageFile(e.target.files[0]);
+      const file = e.target.files[0];
+      setImageFile(file);
+  
+      try {
+        // Comprimir la imagen antes de subirla
+        const compressedFile = await imageCompression(file, {
+          maxSizeMB: 1,
+          maxWidthOrHeight: 1920,
+          useWebWorker: true
+        });
+  
+        const formData = new FormData();
+        formData.append('file', compressedFile);
+        formData.append('upload_preset', 'xgmwzgac');
+  
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', 'https://api.cloudinary.com/v1_1/dpsrtoyp7/image/upload');
+  
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            const percentComplete = (event.loaded / event.total) * 100;
+            setUploadProgress(percentComplete);
+          }
+        };
+  
+        xhr.onload = () => {
+          if (xhr.status === 200) {
+            const response = JSON.parse(xhr.responseText);
+            setImagePublicId(response.public_id);
+            setProduct(prev => ({ ...prev, imageUrl: response.secure_url }));
+            setUploadProgress(0);
+          } else {
+            throw new Error('Error al subir la imagen');
+          }
+        };
+  
+        xhr.onerror = () => {
+          throw new Error('Error al subir la imagen');
+        };
+  
+        xhr.send(formData);
+      } catch (error) {
+        console.error('Error al subir la imagen:', error);
+        setError('Error al subir la imagen. Por favor, intenta de nuevo.');
+        setUploadProgress(0);
+      }
     }
   };
 
@@ -196,29 +253,8 @@ const CreateProductPage: React.FC = () => {
     setError(null);
     
     try {
-      let imageUrl = '';
-      if (imageFile) {
-        const formData = new FormData();
-        formData.append('file', imageFile);
-        formData.append('upload_preset', 'xgmwzgac');
-
-        const imageResponse = await fetch('https://api.cloudinary.com/v1_1/dpsrtoyp7/image/upload', {
-          method: 'POST',
-          body: formData
-        });
-
-        if (!imageResponse.ok) {
-          const errorText = await imageResponse.text();
-          throw new Error(`Error al subir la imagen: ${errorText}`);
-        }
-
-        const imageData = await imageResponse.json();
-        imageUrl = imageData.secure_url;
-      }
-
       const productData = {
         ...product,
-        imageUrl,
         cost: showPrices ? product.cost : 0,
         price1: showPrices ? product.price1 : 0,
         price1MinQty: showPrices ? product.price1MinQty : 0,
@@ -229,7 +265,7 @@ const CreateProductPage: React.FC = () => {
         price4: showPrices ? product.price4 : 0,
         price5: showPrices ? product.price5 : 0,
       };
-
+  
       const response = await fetch('/api/products', {
         method: 'POST',
         headers: {
@@ -237,17 +273,17 @@ const CreateProductPage: React.FC = () => {
         },
         body: JSON.stringify(productData),
       });
-
+  
       if (!response.ok) {
         throw new Error('Error al guardar el producto');
       }
-
+  
       const savedProduct = await response.json();
       console.log('Producto guardado:', savedProduct);
-
+  
       setIsLoading(false);
       setIsConfirmed(true);
-
+  
       setTimeout(() => {
         setProduct({
           boxCode: '',
@@ -266,10 +302,11 @@ const CreateProductPage: React.FC = () => {
           stockLocations: [],
         });
         setImageFile(null);
+        setImagePublicId(null);
         setIsConfirmed(false);
         router.push('/catalogo');
       }, 2000);
-
+  
     } catch (error) {
       console.error('Error al crear el producto:', error);
       setIsLoading(false);
@@ -477,13 +514,22 @@ const CreateProductPage: React.FC = () => {
                     onChange={handleImageChange}
                     className="w-full p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400"
                   />
-                  {imageFile && (
+                  {uploadProgress > 0 && (
+                    <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 mt-2">
+                      <div 
+                        className="bg-blue-600 h-2.5 rounded-full" 
+                        style={{width: `${uploadProgress}%`}}
+                      ></div>
+                    </div>
+                  )}
+                  {imagePublicId && (
                     <div className="mt-2 relative w-full h-64">
-                      <Image
-                        src={URL.createObjectURL(imageFile)}
+                      <AdvancedImage
+                        cldImg={cld
+                          .image(imagePublicId)
+                          .resize(fill().width(300).height(300))
+                          .delivery(quality('auto'))}
                         alt="Vista previa del producto"
-                        fill
-                        style={{ objectFit: 'contain' }}
                       />
                     </div>
                   )}

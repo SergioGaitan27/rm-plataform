@@ -9,8 +9,11 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@cloudinary/react": "^1.13.0",
+    "@cloudinary/url-gen": "^1.13.0",
     "@zxing/library": "^0.21.2",
     "bcryptjs": "^2.4.3",
+    "browser-image-compression": "^2.0.2",
     "cloudinary": "^2.4.0",
     "fs-extra": "^11.2.0",
     "mongoose": "^8.5.1",
@@ -27,7 +30,6 @@
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/fs-extra": "^11.0.4",
-    "@types/mongoose": "^5.11.97",
     "@types/node": "^20.14.13",
     "@types/node-fetch": "^2.6.11",
     "@types/pdfmake": "^0.2.9",
