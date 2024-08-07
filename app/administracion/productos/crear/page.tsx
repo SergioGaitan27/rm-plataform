@@ -81,6 +81,7 @@ const CreateProductPage: React.FC = () => {
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [showPrices, setShowPrices] = useState(false);
 
   useEffect(() => {
     const initialize = async () => {
@@ -197,7 +198,16 @@ const CreateProductPage: React.FC = () => {
 
       const productData = {
         ...product,
-        imageUrl
+        imageUrl,
+        cost: showPrices ? product.cost : 0,
+        price1: showPrices ? product.price1 : 0,
+        price1MinQty: showPrices ? product.price1MinQty : 0,
+        price2: showPrices ? product.price2 : 0,
+        price2MinQty: showPrices ? product.price2MinQty : 0,
+        price3: showPrices ? product.price3 : 0,
+        price3MinQty: showPrices ? product.price3MinQty : 0,
+        price4: showPrices ? product.price4 : 0,
+        price5: showPrices ? product.price5 : 0,
       };
 
       const response = await fetch('/api/products', {
@@ -316,63 +326,76 @@ const CreateProductPage: React.FC = () => {
                 </div>
               </fieldset>
 
+              {/* Checkbox para habilitar precios */}
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="showPrices"
+                  checked={showPrices}
+                  onChange={(e) => setShowPrices(e.target.checked)}
+                  className="form-checkbox h-5 w-5 text-yellow-400"
+                />
+                <label htmlFor="showPrices" className="text-yellow-400">
+                  Habilitar campos de costos y precios
+                </label>
+              </div>
+
               {/* Precios */}
-              <fieldset className="border border-yellow-400 rounded p-4">
-                <legend className="text-lg font-semibold">Precios</legend>
-                <div className="space-y-2">
-                  <input
-                    type="number"
-                    name="cost"
-                    value={getInputValue(product.cost)}
-                    onChange={handleInputChange}
-                    placeholder="Costo"
-                    className="w-full p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400 placeholder-yellow-400 placeholder-opacity-50"
-                    required
-                    step="0.01"
-                  />
-                  {[1, 2, 3].map((num) => (
-                    <div key={num} className="flex space-x-2">
-                      <input
-                        type="number"
-                        name={`price${num}`}
-                        value={getInputValue(product[`price${num}` as keyof ProductForm])}
-                        onChange={handleInputChange}
-                        placeholder={precioPlaceholders[num] || `Precio ${num}`}
-                        className="w-1/2 p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400 placeholder-yellow-400 placeholder-opacity-50"
-                        required
-                        step="0.01"
-                      />
-                      <input
-                        type="number"
-                        name={`price${num}MinQty`}
-                        value={getInputValue(product[`price${num}MinQty` as keyof ProductForm])}
-                        onChange={handleInputChange}
-                        placeholder={`Cantidad mínima`}
-                        className="w-1/2 p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400 placeholder-yellow-400 placeholder-opacity-50"
-                        required
-                      />
-                    </div>
-                  ))}
-                  <input
-                    type="number"
-                    name="price4"
-                    value={getInputValue(product.price4)}
-                    onChange={handleInputChange}
-                    placeholder={precioPlaceholders[4]}
-                    className="w-full p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400 placeholder-yellow-400 placeholder-opacity-50"
-                    step="0.01"
-                  />
-                  <input
-                    type="number"
-                    name="price5"
-                    value={getInputValue(product.price5)}
-                    onChange={handleInputChange}
-                    placeholder={precioPlaceholders[5]}
-                    className="w-full p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400 placeholder-yellow-400 placeholder-opacity-50"
-                    step="0.01"
-                  />
-                </div>
-              </fieldset>
+              {showPrices && (
+                <fieldset className="border border-yellow-400 rounded p-4">
+                  <legend className="text-lg font-semibold">Precios</legend>
+                  <div className="space-y-2">
+                    <input
+                      type="number"
+                      name="cost"
+                      value={getInputValue(product.cost)}
+                      onChange={handleInputChange}
+                      placeholder="Costo"
+                      className="w-full p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400 placeholder-yellow-400 placeholder-opacity-50"
+                      step="0.01"
+                    />
+                    {[1, 2, 3].map((num) => (
+                      <div key={num} className="flex space-x-2">
+                        <input
+                          type="number"
+                          name={`price${num}`}
+                          value={getInputValue(product[`price${num}` as keyof ProductForm])}
+                          onChange={handleInputChange}
+                          placeholder={precioPlaceholders[num] || `Precio ${num}`}
+                          className="w-1/2 p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400 placeholder-yellow-400 placeholder-opacity-50"
+                          step="0.01"
+                        />
+                        <input
+                          type="number"
+                          name={`price${num}MinQty`}
+                          value={getInputValue(product[`price${num}MinQty` as keyof ProductForm])}
+                          onChange={handleInputChange}
+                          placeholder={`Cantidad mínima`}
+                          className="w-1/2 p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400 placeholder-yellow-400 placeholder-opacity-50"
+                        />
+                      </div>
+                    ))}
+                    <input
+                      type="number"
+                      name="price4"
+                      value={getInputValue(product.price4)}
+                      onChange={handleInputChange}
+                      placeholder={precioPlaceholders[4]}
+                      className="w-full p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400 placeholder-yellow-400 placeholder-opacity-50"
+                      step="0.01"
+                    />
+                    <input
+                      type="number"
+                      name="price5"
+                      value={getInputValue(product.price5)}
+                      onChange={handleInputChange}
+                      placeholder={precioPlaceholders[5]}
+                      className="w-full p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400 placeholder-yellow-400 placeholder-opacity-50"
+                      step="0.01"
+                    />
+                  </div>
+                </fieldset>
+              )}
 
               {/* Ubicaciones de Stock */}
               <fieldset className="border border-yellow-400 rounded p-4">
