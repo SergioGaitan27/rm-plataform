@@ -5,18 +5,9 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import dynamic from 'next/dynamic';
+import Image from 'next/image';
 import BottomNavBar from '@/components/BottomNavBar';
-import { Cloudinary } from "@cloudinary/url-gen";
-import { AdvancedImage } from '@cloudinary/react';
-import { fill } from "@cloudinary/url-gen/actions/resize";
-import { quality } from "@cloudinary/url-gen/actions/delivery";
 import imageCompression from 'browser-image-compression';
-
-const cld = new Cloudinary({
-  cloud: {
-    cloudName: 'dpsrtoyp7'
-  }
-});
 
 const BarcodeScanner = dynamic(() => import('@/components/BarcodeScanner'), {
   ssr: false,
@@ -192,7 +183,6 @@ const CreateProductPage: React.FC = () => {
       setImageFile(file);
   
       try {
-        // Comprimir la imagen antes de subirla
         const compressedFile = await imageCompression(file, {
           maxSizeMB: 1,
           maxWidthOrHeight: 1920,
@@ -524,12 +514,11 @@ const CreateProductPage: React.FC = () => {
                   )}
                   {imagePublicId && (
                     <div className="mt-2 relative w-full h-64">
-                      <AdvancedImage
-                        cldImg={cld
-                          .image(imagePublicId)
-                          .resize(fill().width(300).height(300))
-                          .delivery(quality('auto'))}
+                      <Image
+                        src={`https://res.cloudinary.com/dpsrtoyp7/image/upload/c_fill,w_300,h_300,q_auto/${imagePublicId}`}
                         alt="Vista previa del producto"
+                        fill
+                        style={{ objectFit: 'contain' }}
                       />
                     </div>
                   )}
