@@ -147,8 +147,8 @@ export default function ContainerDetails({ params }: { params: { containerNumber
         {filteredProducts.map((product, index) => (
           <li key={product.code} className="bg-gray-900 rounded-lg p-4 shadow-md border border-yellow-400">
               <div className="flex flex-col mb-4">
-                <h2 className="text-xl font-semibold text-yellow-400">{product.name}</h2>
-                <span className="text-base text-gray-400">Código: {product.code}</span>
+                <h2 className="text-xl font-semibold text-yellow-400">Código: {product.code}</h2>
+                <span className="text-base text-gray-400">{product.name} </span>
               </div>
               <div className="flex justify-between items-center bg-gray-800 p-3 rounded-lg">
                 <div>
