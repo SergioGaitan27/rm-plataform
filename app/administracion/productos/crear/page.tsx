@@ -82,6 +82,8 @@ const CreateProductPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [showPrices, setShowPrices] = useState(false);
+  const [boxCodeExists, setBoxCodeExists] = useState(false);
+  const [productCodeExists, setProductCodeExists] = useState(false);
 
   useEffect(() => {
     const initialize = async () => {
@@ -118,6 +120,20 @@ const CreateProductPage: React.FC = () => {
     return null;
   }
 
+  const checkCodeExistence = async (code: string, type: 'boxCode' | 'productCode') => {
+    try {
+      const response = await fetch(`/api/check-code-existence?code=${code}&type=${type}`);
+      const data = await response.json();
+      if (type === 'boxCode') {
+        setBoxCodeExists(data.exists);
+      } else {
+        setProductCodeExists(data.exists);
+      }
+    } catch (error) {
+      console.error(`Error checking ${type} existence:`, error);
+    }
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setProduct(prev => ({
@@ -127,6 +143,10 @@ const CreateProductPage: React.FC = () => {
           ? (value === '' ? undefined : Number(value))
           : value.toUpperCase()
     }));
+
+    if (name === 'boxCode' || name === 'productCode') {
+      checkCodeExistence(value, name as 'boxCode' | 'productCode');
+    }
   };
 
   const handleLocationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -275,23 +295,32 @@ const CreateProductPage: React.FC = () => {
               <fieldset className="border border-yellow-400 rounded p-4">
                 <legend className="text-lg font-semibold">Datos del Producto</legend>
                 <div className="space-y-2">
-                  <input
-                    type="text"
-                    name="boxCode"
-                    value={product.boxCode}
-                    onChange={handleInputChange}
-                    placeholder="Código de caja"
-                    className="w-full p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400"
-                    required
-                  />
-                  <div className="flex space-x-2">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      name="boxCode"
+                      value={product.boxCode}
+                      onChange={handleInputChange}
+                      placeholder="Código de caja"
+                      className={`w-full p-2 bg-gray-900 border ${
+                        boxCodeExists ? 'border-red-500' : 'border-yellow-400'
+                      } rounded text-yellow-400`}
+                      required
+                    />
+                    {boxCodeExists && (
+                      <p className="text-red-500 text-sm mt-1">Este código de caja ya existe</p>
+                    )}
+                  </div>
+                  <div className="flex space-x-2 relative">
                     <input
                       type="text"
                       name="productCode"
                       value={product.productCode}
                       onChange={handleInputChange}
                       placeholder="Código de producto"
-                      className="flex-grow p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400"
+                      className={`flex-grow p-2 bg-gray-900 border ${
+                        productCodeExists ? 'border-red-500' : 'border-yellow-400'
+                      } rounded text-yellow-400`}
                       required
                     />
                     <button
@@ -301,6 +330,9 @@ const CreateProductPage: React.FC = () => {
                     >
                       Escanear
                     </button>
+                    {productCodeExists && (
+                      <p className="text-red-500 text-sm mt-1 absolute -bottom-6 left-0">Este código de producto ya existe</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     {showBarcodeScanner && <BarcodeScanner onScan={handleBarcodeScanned} />}
@@ -461,7 +493,7 @@ const CreateProductPage: React.FC = () => {
               <button 
                 type="submit" 
                 className="w-full bg-yellow-400 text-black p-2 rounded hover:bg-yellow-500 transition-colors"
-                disabled={isLoading}
+                disabled={isLoading || boxCodeExists || productCodeExists}
               >
                 {isLoading ? 'Guardando...' : 'Guardar Producto'}
               </button>
