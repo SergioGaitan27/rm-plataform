@@ -16,13 +16,25 @@ export async function POST(req: Request) {
   }
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     await connectDB();
-    const products = await Product.find({});
-    return NextResponse.json(products);
+    const { searchParams } = new URL(req.url);
+    const code = searchParams.get('code');
+    const type = searchParams.get('type');
+
+    if (code && type) {
+      // Verificar existencia de código
+      const query = type === 'boxCode' ? { boxCode: code } : { productCode: code };
+      const existingProduct = await Product.findOne(query);
+      return NextResponse.json({ exists: !!existingProduct });
+    } else {
+      // Obtener todos los productos
+      const products = await Product.find({});
+      return NextResponse.json(products);
+    }
   } catch (error) {
-    console.error('Error al obtener los productos:', error);
-    return NextResponse.json({ error: 'Error al obtener los productos' }, { status: 500 });
+    console.error('Error en la operación de productos:', error);
+    return NextResponse.json({ error: 'Error en la operación de productos' }, { status: 500 });
   }
 }

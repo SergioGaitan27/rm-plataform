@@ -122,7 +122,7 @@ const CreateProductPage: React.FC = () => {
 
   const checkCodeExistence = async (code: string, type: 'boxCode' | 'productCode') => {
     try {
-      const response = await fetch(`/api/check-code-existence?code=${code}&type=${type}`);
+      const response = await fetch(`/api/products?code=${code}&type=${type}`);
       const data = await response.json();
       if (type === 'boxCode') {
         setBoxCodeExists(data.exists);
