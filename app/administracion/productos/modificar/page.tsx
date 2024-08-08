@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import BottomNavBar from '@/components/BottomNavBar';
 
 interface StockLocation {
   location: string;
@@ -392,6 +393,7 @@ const EditProductPage: React.FC = () => {
           )}
         </div>
       </div>
+      <BottomNavBar categories={userCategories} />
 
       {isConfirmed && (
         <div className="fixed inset-0 flex items-center justify-center z-50">
