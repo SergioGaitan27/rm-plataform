@@ -1,13 +1,12 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import BottomNavBar from '@/components/BottomNavBar';
-import imageCompression from 'browser-image-compression';
 
 const BarcodeScanner = dynamic(() => import('@/components/BarcodeScanner'), {
   ssr: false,
@@ -85,32 +84,27 @@ const CreateProductPage: React.FC = () => {
   const [showPrices, setShowPrices] = useState(false);
   const [boxCodeExists, setBoxCodeExists] = useState(false);
   const [productCodeExists, setProductCodeExists] = useState(false);
-  const [imagePublicId, setImagePublicId] = useState<string | null>(null);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [formData, setFormData] = useState<FormData>(new FormData());
-  const [isUploading, setIsUploading] = useState(false);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-
-  const initialize = useCallback(async () => {
-    if (status === 'authenticated') {
-      // Simulando una llamada a la API con setTimeout
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setCategories([
-        { name: 'Punto de venta', allowedRoles: ['vendedor'], icon: '💰' },
-        { name: 'Créditos', allowedRoles: ['super_administrador', 'administrador'], icon: '💳' },
-        { name: 'Catálogo', allowedRoles: ['super_administrador', 'administrador'], icon: '📚' },
-        { name: 'Administración', allowedRoles: ['super_administrador', 'administrador'], icon: '⚙️' },
-        { name: 'Dashboard', allowedRoles: ['super_administrador', 'administrador'], icon: '🗂️' },
-      ]);
-      setIsLoading(false);
-    } else if (status === 'unauthenticated') {
-      router.push('/login');
-    }
-  }, [status, router]);
 
   useEffect(() => {
+    const initialize = async () => {
+      if (status === 'authenticated') {
+        // Simulando una llamada a la API con setTimeout
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        setCategories([
+          { name: 'Punto de venta', allowedRoles: ['vendedor'], icon: '💰' },
+          { name: 'Créditos', allowedRoles: ['super_administrador', 'administrador'], icon: '💳' },
+          { name: 'Catálogo', allowedRoles: ['super_administrador', 'administrador'], icon: '📚' },
+          { name: 'Administración', allowedRoles: ['super_administrador', 'administrador'], icon: '⚙️' },
+          { name: 'Dashboard', allowedRoles: ['super_administrador', 'administrador'], icon: '🗂️' },
+        ]);
+        setIsLoading(false);
+      } else if (status === 'unauthenticated') {
+        router.push('/login');
+      }
+    };
+  
     initialize();
-  }, [initialize]);
+  }, [status, router]);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -118,7 +112,15 @@ const CreateProductPage: React.FC = () => {
     }
   }, [status, router]);
 
-  const checkCodeExistence = useCallback(async (code: string, type: 'boxCode' | 'productCode') => {
+  if (status === 'loading' || isLoading) {
+    return <LoadingSpinner />;
+  }
+  
+  if (!session) {
+    return null;
+  }
+
+  const checkCodeExistence = async (code: string, type: 'boxCode' | 'productCode') => {
     try {
       const response = await fetch(`/api/products?code=${code}&type=${type}`);
       const data = await response.json();
@@ -130,9 +132,9 @@ const CreateProductPage: React.FC = () => {
     } catch (error) {
       console.error(`Error checking ${type} existence:`, error);
     }
-  }, []);
+  };
 
-  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setProduct(prev => ({
       ...prev,
@@ -142,113 +144,98 @@ const CreateProductPage: React.FC = () => {
           : value.toUpperCase()
     }));
 
-    const updatedFormData = new FormData();
-    formData.forEach((value, key) => {
-      updatedFormData.append(key, value);
-    });
-    updatedFormData.set(name, value);
-    setFormData(updatedFormData);
-
     if (name === 'boxCode' || name === 'productCode') {
       checkCodeExistence(value, name as 'boxCode' | 'productCode');
     }
-  }, [formData, checkCodeExistence]);
+  };
 
-  const handleLocationChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLocationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setNewLocation(prev => ({
       ...prev,
       [name]: name === 'quantity' ? (value === '' ? undefined : parseInt(value)) : value.toUpperCase()
     }));
-  }, []);
+  };
 
-  const addStockLocation = useCallback(() => {
+  const addStockLocation = () => {
     if (newLocation.location && newLocation.quantity !== undefined && newLocation.quantity > 0) {
-      setProduct(prev => ({
-        ...prev,
-        stockLocations: [...prev.stockLocations, newLocation],
-      }));
+      setProduct({
+        ...product,
+        stockLocations: [...product.stockLocations, newLocation],
+      });
       setNewLocation({ location: '', quantity: undefined });
     }
-  }, [newLocation]);
+  };
 
-  const getInputValue = useCallback((value: any): string => {
+  const getInputValue = (value: any): string => {
     if (value === undefined || value === null) {
       return '';
     }
     return value.toString();
-  }, []);
+  };
 
-  const handleImageChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setImageFile(file);
-
-      // Create a preview immediately
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-
-      try {
-        const compressedFile = await imageCompression(file, {
-          maxSizeMB: 1,
-          maxWidthOrHeight: 1920,
-          useWebWorker: true
-        });
-
-        // Add compressed file to FormData
-        const updatedFormData = new FormData();
-        formData.forEach((value, key) => {
-          updatedFormData.append(key, value);
-        });
-        updatedFormData.set('image', compressedFile, compressedFile.name);
-        setFormData(updatedFormData);
-      } catch (error) {
-        console.error('Error al comprimir la imagen:', error);
-        setError('Error al procesar la imagen. Por favor, intenta de nuevo.');
-      }
+      setImageFile(e.target.files[0]);
     }
-  }, [formData]);
+  };
 
-  const handleBarcodeScanned = useCallback(async (barcode: string) => {
+  const handleBarcodeScanned = async (barcode: string) => {
     try {
-      setProduct(prev => ({ ...prev, productCode: barcode }));
+      await setProduct(prev => ({ ...prev, productCode: barcode }));
       setShowBarcodeScanner(false);
     } catch (error) {
       setError('Hubo un problema al escanear el código de barras. Por favor, intenta de nuevo.');
       console.error('Error al manejar el código de barras:', error);
     }
-  }, []);
+  };
 
-  const handleSubmit = useCallback(async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
-    setIsUploading(true);
     
     try {
-      // Add all form fields to FormData
-      const updatedFormData = new FormData();
-      Object.entries(product).forEach(([key, value]) => {
-        if (value !== undefined) {
-          updatedFormData.set(key, value.toString());
+      let imageUrl = '';
+      if (imageFile) {
+        const formData = new FormData();
+        formData.append('file', imageFile);
+        formData.append('upload_preset', 'xgmwzgac');
+
+        const imageResponse = await fetch('https://api.cloudinary.com/v1_1/dpsrtoyp7/image/upload', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!imageResponse.ok) {
+          const errorText = await imageResponse.text();
+          throw new Error(`Error al subir la imagen: ${errorText}`);
         }
-      });
 
-      // Add stock locations
-      updatedFormData.set('stockLocations', JSON.stringify(product.stockLocations));
-
-      // Add image if it exists in the current formData
-      const currentImage = formData.get('image');
-      if (currentImage) {
-        updatedFormData.set('image', currentImage);
+        const imageData = await imageResponse.json();
+        imageUrl = imageData.secure_url;
       }
+
+      const productData = {
+        ...product,
+        imageUrl,
+        cost: showPrices ? product.cost : 0,
+        price1: showPrices ? product.price1 : 0,
+        price1MinQty: showPrices ? product.price1MinQty : 0,
+        price2: showPrices ? product.price2 : 0,
+        price2MinQty: showPrices ? product.price2MinQty : 0,
+        price3: showPrices ? product.price3 : 0,
+        price3MinQty: showPrices ? product.price3MinQty : 0,
+        price4: showPrices ? product.price4 : 0,
+        price5: showPrices ? product.price5 : 0,
+      };
 
       const response = await fetch('/api/products', {
         method: 'POST',
-        body: updatedFormData,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(productData),
       });
 
       if (!response.ok) {
@@ -259,11 +246,9 @@ const CreateProductPage: React.FC = () => {
       console.log('Producto guardado:', savedProduct);
 
       setIsLoading(false);
-      setIsUploading(false);
       setIsConfirmed(true);
 
       setTimeout(() => {
-        // Reset form
         setProduct({
           boxCode: '',
           productCode: '',
@@ -281,9 +266,6 @@ const CreateProductPage: React.FC = () => {
           stockLocations: [],
         });
         setImageFile(null);
-        setImagePublicId(null);
-        setImagePreview(null);
-        setFormData(new FormData());
         setIsConfirmed(false);
         router.push('/catalogo');
       }, 2000);
@@ -291,18 +273,9 @@ const CreateProductPage: React.FC = () => {
     } catch (error) {
       console.error('Error al crear el producto:', error);
       setIsLoading(false);
-      setIsUploading(false);
       setError('Hubo un error al guardar el producto. Por favor, intenta de nuevo.');
     }
-  }, [product, formData, router]);
-
-  if (status === 'loading' || isLoading) {
-    return <LoadingSpinner />;
-  }
-  
-  if (!session) {
-    return null;
-  }
+  };
 
   const userRole = session.user?.role;
   const userCategories = categories.filter(category =>
@@ -311,162 +284,93 @@ const CreateProductPage: React.FC = () => {
 
   return (
     <>
-      {!isLoading && (
-        <div className="min-h-screen bg-black text-yellow-400 flex flex-col justify-between">
-          <div className="min-h-screen bg-black text-yellow-400 p-4 mb-[120px]">
-            <div className="max-w-md mx-auto relative">
-              <h1 className="text-2xl font-bold mb-6">Crear Producto</h1>
-              {error && <p className="text-red-500 mb-4">{error}</p>}
-              <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Datos del Producto */}
-                <fieldset className="border border-yellow-400 rounded p-4">
-                  <legend className="text-lg font-semibold">Datos del Producto</legend>
-                  <div className="space-y-2">
-                    <div className="relative">
-                      <input
-                        type="text"
-                        name="boxCode"
-                        value={product.boxCode}
-                        onChange={handleInputChange}
-                        placeholder="Código de caja"
-                        className={`w-full p-2 bg-gray-900 border ${
-                          boxCodeExists ? 'border-red-500' : 'border-yellow-400'
-                        } rounded text-yellow-400`}
-                        required
-                      />
-                      {boxCodeExists && (
-                        <p className="text-red-500 text-sm mt-1">Este código de caja ya existe</p>
-                      )}
-                    </div>
-                    <div className="flex space-x-2 relative">
-                      <input
-                        type="text"
-                        name="productCode"
-                        value={product.productCode}
-                        onChange={handleInputChange}
-                        placeholder="Código de producto"
-                        className={`flex-grow p-2 bg-gray-900 border ${
-                          productCodeExists ? 'border-red-500' : 'border-yellow-400'
-                        } rounded text-yellow-400`}
-                        required
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowBarcodeScanner(true)}
-                        className="bg-yellow-400 text-black p-2 rounded"
-                      >
-                        Escanear
-                      </button>
-                      {productCodeExists && (
-                        <p className="text-red-500 text-sm mt-1 absolute -bottom-6 left-0">Este código de producto ya existe</p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      {showBarcodeScanner && <BarcodeScanner onScan={handleBarcodeScanned} />}
-                    </div>
-                    <input
-                      type="text"
-                      name="name"
-                      value={product.name}
-                      onChange={handleInputChange}
-                      placeholder="Nombre del producto"
-                      className="w-full p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400"
-                      required
-                    />
-                    <input
-                      type="number"
-                      name="piecesPerBox"
-                      value={getInputValue(product.piecesPerBox)}
-                      onChange={handleInputChange}
-                      placeholder="Piezas por caja"
-                      className="w-full p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400"
-                      required
-                    />
-                  </div>
-                </fieldset>
-
-              {/* Ubicaciones de Stock */}
+    {!isLoading && (
+      <div className="min-h-screen bg-black text-yellow-400 flex flex-col justify-between">
+        <div className="min-h-screen bg-black text-yellow-400 p-4 mb-[120px]">
+          <div className="max-w-md mx-auto relative">
+            <h1 className="text-2xl font-bold mb-6">Crear Producto</h1>
+            {error && <p className="text-red-500 mb-4">{error}</p>}
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Datos del Producto */}
               <fieldset className="border border-yellow-400 rounded p-4">
-                <legend className="text-lg font-semibold">Ubicaciones de Stock</legend>
+                <legend className="text-lg font-semibold">Datos del Producto</legend>
                 <div className="space-y-2">
-                  {product.stockLocations.map((loc, index) => (
-                    <div key={index} className="flex space-x-2 mb-2">
-                      <span>{loc.location}: {loc.quantity ?? 'N/A'}</span>
-                    </div>
-                  ))}
-                  <div className="flex space-x-2">
+                  <div className="relative">
                     <input
                       type="text"
-                      name="location"
-                      value={newLocation.location}
-                      onChange={handleLocationChange}
-                      placeholder="Ubicación"
-                      className="w-1/2 p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400 placeholder-yellow-400 placeholder-opacity-50"
+                      name="boxCode"
+                      value={product.boxCode}
+                      onChange={handleInputChange}
+                      placeholder="Código de caja"
+                      className={`w-full p-2 bg-gray-900 border ${
+                        boxCodeExists ? 'border-red-500' : 'border-yellow-400'
+                      } rounded text-yellow-400`}
+                      required
                     />
+                    {boxCodeExists && (
+                      <p className="text-red-500 text-sm mt-1">Este código de caja ya existe</p>
+                    )}
+                  </div>
+                  <div className="flex space-x-2 relative">
                     <input
-                      type="number"
-                      name="quantity"
-                      value={getInputValue(newLocation.quantity)}
-                      onChange={handleLocationChange}
-                      placeholder="Cantidad"
-                      className="w-1/4 p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400 placeholder-yellow-400 placeholder-opacity-50"
+                      type="text"
+                      name="productCode"
+                      value={product.productCode}
+                      onChange={handleInputChange}
+                      placeholder="Código de producto"
+                      className={`flex-grow p-2 bg-gray-900 border ${
+                        productCodeExists ? 'border-red-500' : 'border-yellow-400'
+                      } rounded text-yellow-400`}
+                      required
                     />
                     <button
                       type="button"
-                      onClick={addStockLocation}
-                      className="bg-yellow-400 text-black p-2 rounded hover:bg-yellow-500 transition-colors"
+                      onClick={() => setShowBarcodeScanner(true)}
+                      className="bg-yellow-400 text-black p-2 rounded"
                     >
-                      Agregar
+                      Escanear
                     </button>
+                    {productCodeExists && (
+                      <p className="text-red-500 text-sm mt-1 absolute -bottom-6 left-0">Este código de producto ya existe</p>
+                    )}
                   </div>
-                </div>
-              </fieldset>
-
-              {/* Imagen del Producto */}
-              <fieldset className="border border-yellow-400 rounded p-4">
-                <legend className="text-lg font-semibold">Imagen del Producto</legend>
-                <div className="space-y-2">
+                  <div className="space-y-2">
+                    {showBarcodeScanner && <BarcodeScanner onScan={handleBarcodeScanned} />}
+                  </div>
                   <input
-                    type="file"
-                    id="image"
-                    accept="image/*"
-                    onChange={handleImageChange}
+                    type="text"
+                    name="name"
+                    value={product.name}
+                    onChange={handleInputChange}
+                    placeholder="Nombre del producto"
                     className="w-full p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400"
+                    required
                   />
-                  {uploadProgress > 0 && (
-                    <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 mt-2">
-                      <div 
-                        className="bg-blue-600 h-2.5 rounded-full" 
-                        style={{width: `${uploadProgress}%`}}
-                      ></div>
-                    </div>
-                  )}
-                  {imagePreview && (
-                    <div className="mt-2 relative w-full h-64">
-                      <Image
-                        src={imagePreview}
-                        alt="Vista previa del producto"
-                        fill
-                        style={{ objectFit: 'contain' }}
-                      />
-                    </div>
-                  )}
+                  <input
+                    type="number"
+                    name="piecesPerBox"
+                    value={getInputValue(product.piecesPerBox)}
+                    onChange={handleInputChange}
+                    placeholder="Piezas por caja"
+                    className="w-full p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400"
+                    required
+                  />
                 </div>
               </fieldset>
 
-                {/* Checkbox para habilitar precios */}
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="showPrices"
-                    checked={showPrices}
-                    onChange={(e) => setShowPrices(e.target.checked)}
-                    className="form-checkbox h-5 w-5 text-yellow-400"
-                  />
-                  <label htmlFor="showPrices" className="text-yellow-400">
-                    Habilitar campos de costos y precios
-                  </label>
-                </div>
+              {/* Checkbox para habilitar precios */}
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="showPrices"
+                  checked={showPrices}
+                  onChange={(e) => setShowPrices(e.target.checked)}
+                  className="form-checkbox h-5 w-5 text-yellow-400"
+                />
+                <label htmlFor="showPrices" className="text-yellow-400">
+                  Habilitar campos de costos y precios
+                </label>
+              </div>
 
               {/* Precios */}
               {showPrices && (
@@ -524,6 +428,67 @@ const CreateProductPage: React.FC = () => {
                   </div>
                 </fieldset>
               )}
+
+              {/* Ubicaciones de Stock */}
+              <fieldset className="border border-yellow-400 rounded p-4">
+                <legend className="text-lg font-semibold">Ubicaciones de Stock</legend>
+                <div className="space-y-2">
+                  {product.stockLocations.map((loc, index) => (
+                    <div key={index} className="flex space-x-2 mb-2">
+                      <span>{loc.location}: {loc.quantity ?? 'N/A'}</span>
+                    </div>
+                  ))}
+                  <div className="flex space-x-2">
+                    <input
+                      type="text"
+                      name="location"
+                      value={newLocation.location}
+                      onChange={handleLocationChange}
+                      placeholder="Ubicación"
+                      className="w-1/2 p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400 placeholder-yellow-400 placeholder-opacity-50"
+                    />
+                    <input
+                      type="number"
+                      name="quantity"
+                      value={getInputValue(newLocation.quantity)}
+                      onChange={handleLocationChange}
+                      placeholder="Cantidad"
+                      className="w-1/4 p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400 placeholder-yellow-400 placeholder-opacity-50"
+                    />
+                    <button
+                      type="button"
+                      onClick={addStockLocation}
+                      className="bg-yellow-400 text-black p-2 rounded hover:bg-yellow-500 transition-colors"
+                    >
+                      Agregar
+                    </button>
+                  </div>
+                </div>
+              </fieldset>
+
+              {/* Imagen del Producto */}
+              <fieldset className="border border-yellow-400 rounded p-4">
+                <legend className="text-lg font-semibold">Imagen del Producto</legend>
+                <div className="space-y-2">
+                  <input
+                    type="file"
+                    id="image"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="w-full p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400"
+                  />
+                  {imageFile && (
+                    <div className="mt-2 relative w-full h-64">
+                      <Image
+                        src={URL.createObjectURL(imageFile)}
+                        alt="Vista previa del producto"
+                        fill
+                        style={{ objectFit: 'contain' }}
+                      />
+                    </div>
+                  )}
+                </div>
+              </fieldset>
 
               <button 
                 type="submit" 
