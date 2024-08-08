@@ -404,6 +404,71 @@ const CreateProductPage: React.FC = () => {
                 </div>
               </fieldset>
 
+              {/* Ubicaciones de Stock */}
+              <fieldset className="border border-yellow-400 rounded p-4">
+                <legend className="text-lg font-semibold">Ubicaciones de Stock</legend>
+                <div className="space-y-2">
+                  {product.stockLocations.map((loc, index) => (
+                    <div key={index} className="flex space-x-2 mb-2">
+                      <span>{loc.location}: {loc.quantity ?? 'N/A'}</span>
+                    </div>
+                  ))}
+                  <div className="flex space-x-2">
+                    <input
+                      type="text"
+                      name="location"
+                      value={newLocation.location}
+                      onChange={handleLocationChange}
+                      placeholder="Ubicación"
+                      className="w-1/2 p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400 placeholder-yellow-400 placeholder-opacity-50"
+                    />
+                    <input
+                      type="number"
+                      name="quantity"
+                      value={getInputValue(newLocation.quantity)}
+                      onChange={handleLocationChange}
+                      placeholder="Cantidad"
+                      className="w-1/4 p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400 placeholder-yellow-400 placeholder-opacity-50"
+                    />
+                    <button
+                      type="button"
+                      onClick={addStockLocation}
+                      className="bg-yellow-400 text-black p-2 rounded hover:bg-yellow-500 transition-colors"
+                    >
+                      Agregar
+                    </button>
+                  </div>
+                </div>
+              </fieldset>
+
+              {/* Imagen del Producto */}
+              <fieldset className="border border-yellow-400 rounded p-4">
+                <legend className="text-lg font-semibold">Imagen del Producto</legend>
+                <div className="space-y-2">
+                  <input
+                    type="file"
+                    id="image"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="w-full p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400"
+                  />
+                  {imagePreviewUrl && (
+                    <div className="mt-2 relative w-full h-64">
+                      <Image
+                        src={imagePreviewUrl}
+                        alt="Vista previa del producto"
+                        fill
+                        style={{ objectFit: 'contain' }}
+                      />
+                    </div>
+                  )}
+                  {compressedImageFile && (
+                    <p className="text-sm text-green-500">
+                      Imagen comprimida: {(compressedImageFile.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
+                  )}
+                </div>
+              </fieldset>
               {/* Checkbox para habilitar precios */}
               <div className="flex items-center space-x-2">
                 <input
@@ -474,72 +539,6 @@ const CreateProductPage: React.FC = () => {
                   </div>
                 </fieldset>
               )}
-
-              {/* Ubicaciones de Stock */}
-              <fieldset className="border border-yellow-400 rounded p-4">
-                <legend className="text-lg font-semibold">Ubicaciones de Stock</legend>
-                <div className="space-y-2">
-                  {product.stockLocations.map((loc, index) => (
-                    <div key={index} className="flex space-x-2 mb-2">
-                      <span>{loc.location}: {loc.quantity ?? 'N/A'}</span>
-                    </div>
-                  ))}
-                  <div className="flex space-x-2">
-                    <input
-                      type="text"
-                      name="location"
-                      value={newLocation.location}
-                      onChange={handleLocationChange}
-                      placeholder="Ubicación"
-                      className="w-1/2 p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400 placeholder-yellow-400 placeholder-opacity-50"
-                    />
-                    <input
-                      type="number"
-                      name="quantity"
-                      value={getInputValue(newLocation.quantity)}
-                      onChange={handleLocationChange}
-                      placeholder="Cantidad"
-                      className="w-1/4 p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400 placeholder-yellow-400 placeholder-opacity-50"
-                    />
-                    <button
-                      type="button"
-                      onClick={addStockLocation}
-                      className="bg-yellow-400 text-black p-2 rounded hover:bg-yellow-500 transition-colors"
-                    >
-                      Agregar
-                    </button>
-                  </div>
-                </div>
-              </fieldset>
-
-              {/* Imagen del Producto */}
-              <fieldset className="border border-yellow-400 rounded p-4">
-                <legend className="text-lg font-semibold">Imagen del Producto</legend>
-                <div className="space-y-2">
-                  <input
-                    type="file"
-                    id="image"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    className="w-full p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400"
-                  />
-                  {imagePreviewUrl && (
-                    <div className="mt-2 relative w-full h-64">
-                      <Image
-                        src={imagePreviewUrl}
-                        alt="Vista previa del producto"
-                        fill
-                        style={{ objectFit: 'contain' }}
-                      />
-                    </div>
-                  )}
-                  {compressedImageFile && (
-                    <p className="text-sm text-green-500">
-                      Imagen comprimida: {(compressedImageFile.size / 1024 / 1024).toFixed(2)} MB
-                    </p>
-                  )}
-                </div>
-              </fieldset>
               <button 
                 type="submit" 
                 className="w-full bg-yellow-400 text-black p-2 rounded hover:bg-yellow-500 transition-colors"
