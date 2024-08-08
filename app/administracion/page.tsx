@@ -56,7 +56,7 @@ const AdminPage = () => {
   const adminCategories = [
     { name: 'Clientes', path: '/bajo-construccion', icon: '👥' },
     // { name: 'Clientes', path: '/administracion/clientes', icon: '👥' },
-    { name: 'Productos', path: '/administracion/productos', icon: '📦' },
+    { name: 'Productos', path: '/administracion/productos', icon: '🗃️' },
     // { name: 'Negocios', path: '/administracion/negocios', icon: '🏢' },
     { name: 'Negocios', path: '/bajo-construccion', icon: '🏢' },
     { name: 'Contenedores', path: '/administracion/contenedores', icon: '🚛' }, 

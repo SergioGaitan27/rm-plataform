@@ -75,7 +75,6 @@ const CreateProductPage: React.FC = () => {
   });
 
   const [newLocation, setNewLocation] = useState<StockLocation>({ location: '', quantity: undefined });
-  const [imageFile, setImageFile] = useState<File | null>(null);
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isConfirmed, setIsConfirmed] = useState(false);
@@ -84,6 +83,9 @@ const CreateProductPage: React.FC = () => {
   const [showPrices, setShowPrices] = useState(false);
   const [boxCodeExists, setBoxCodeExists] = useState(false);
   const [productCodeExists, setProductCodeExists] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [compressedImageFile, setCompressedImageFile] = useState<File | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const initialize = async () => {
@@ -134,6 +136,41 @@ const CreateProductPage: React.FC = () => {
     }
   };
 
+  const compressImage = (file: File): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = document.createElement('img');
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          const scaleFactor = 0.7; // Adjust this value to change compression level
+          canvas.width = img.width * scaleFactor;
+          canvas.height = img.height * scaleFactor;
+          ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                const newFile = new File([blob], file.name, {
+                  type: 'image/jpeg',
+                  lastModified: Date.now(),
+                });
+                resolve(newFile);
+              } else {
+                reject(new Error('Canvas to Blob conversion failed'));
+              }
+            },
+            'image/jpeg',
+            0.7 // Adjust this value to change JPEG quality
+          );
+        };
+      };
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setProduct(prev => ({
@@ -174,9 +211,19 @@ const CreateProductPage: React.FC = () => {
     return value.toString();
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setImageFile(e.target.files[0]);
+      const file = e.target.files[0];
+      setImageFile(file);
+      const previewUrl = URL.createObjectURL(file);
+      setImagePreviewUrl(previewUrl);
+      try {
+        const compressedFile = await compressImage(file);
+        setCompressedImageFile(compressedFile);
+      } catch (error) {
+        console.error('Error compressing image:', error);
+        setCompressedImageFile(null);
+      }
     }
   };
 
@@ -197,16 +244,15 @@ const CreateProductPage: React.FC = () => {
     
     try {
       let imageUrl = '';
-      if (imageFile) {
+      if (compressedImageFile) {
         const formData = new FormData();
-        formData.append('file', imageFile);
+        formData.append('file', compressedImageFile);
         formData.append('upload_preset', 'xgmwzgac');
 
         const imageResponse = await fetch('https://api.cloudinary.com/v1_1/dpsrtoyp7/image/upload', {
           method: 'POST',
           body: formData
         });
-
         if (!imageResponse.ok) {
           const errorText = await imageResponse.text();
           throw new Error(`Error al subir la imagen: ${errorText}`);
@@ -477,19 +523,23 @@ const CreateProductPage: React.FC = () => {
                     onChange={handleImageChange}
                     className="w-full p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400"
                   />
-                  {imageFile && (
+                  {imagePreviewUrl && (
                     <div className="mt-2 relative w-full h-64">
                       <Image
-                        src={URL.createObjectURL(imageFile)}
+                        src={imagePreviewUrl}
                         alt="Vista previa del producto"
                         fill
                         style={{ objectFit: 'contain' }}
                       />
                     </div>
                   )}
+                  {compressedImageFile && (
+                    <p className="text-sm text-green-500">
+                      Imagen comprimida: {(compressedImageFile.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
+                  )}
                 </div>
               </fieldset>
-
               <button 
                 type="submit" 
                 className="w-full bg-yellow-400 text-black p-2 rounded hover:bg-yellow-500 transition-colors"
