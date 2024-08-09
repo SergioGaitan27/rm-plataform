@@ -313,7 +313,7 @@ const CreateProductPage: React.FC = () => {
         });
         setImageFile(null);
         setIsConfirmed(false);
-        router.push('/catalogo');
+        router.push('/administracion/productos');
       }, 2000);
 
     } catch (error) {
