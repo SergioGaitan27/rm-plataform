@@ -106,10 +106,10 @@ const ProductCatalog: React.FC = () => {
                   <p>Mayoreo: ${product.price2.toFixed(2)} | A partir de: {product.price2MinQty}</p>
                   <p>Caja: ${product.price3.toFixed(2)} | A partir de: {product.price3MinQty}</p>
                 </div>
-                <div className="mt-3">
+                {/* <div className="mt-3">
                   <p className="font-semibold">Inventario total:</p>
                   <p>{product.stockLocations.reduce((total, location) => total + location.quantity, 0)} unidades</p>
-                </div>
+                </div> */}
               </div>
             ))}
           </div>
