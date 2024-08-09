@@ -124,7 +124,7 @@ const PrecargaContenedor = () => {
   );
 
   return (
-    <div className="min-h-screen bg-black text-yellow-400 flex flex-col justify-between">
+    <div className="min-h-screen bg-black text-yellow-400 flex flex-col justify-between pb-20">
       <div className="p-4 flex-grow">
         <h1 className="text-3xl font-bold mb-6">Precargar Contenedor</h1>
         <form onSubmit={handleSubmit} className="space-y-6">
