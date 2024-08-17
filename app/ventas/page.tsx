@@ -96,14 +96,18 @@ const SalesPage: React.FC = () => {
   const handleSearchBottom = (searchTerm: string) => {
     setSearchTermBottom(searchTerm);
 
-    // Filtrar productos según el término de búsqueda
-    const filtered = products.filter(product =>
-      product.boxCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.productCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    if (searchTerm === '') {
+      setFilteredProducts([]); // Ocultar la lista si el campo de búsqueda está vacío
+    } else {
+      // Filtrar productos según el término de búsqueda
+      const filtered = products.filter(product =>
+        product.boxCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.productCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
 
-    setFilteredProducts(filtered);
+      setFilteredProducts(filtered);
+    }
   };
 
   const handleSelectProduct = (product: Product) => {
@@ -324,7 +328,7 @@ const SalesPage: React.FC = () => {
               Buscar
             </button>
             {filteredProducts.length > 0 && (
-              <ul className="absolute z-10 bg-white border rounded shadow-lg w-full mt-1 max-h-40 overflow-y-auto">
+              <ul className="absolute z-10 bg-white border rounded shadow-lg w-full mt-12 max-h-40 overflow-y-auto">
                 {filteredProducts.map((product) => (
                   <li
                     key={product._id}
