@@ -34,6 +34,20 @@ interface CartItem extends Product {
   unitType: 'pieces' | 'boxes';
 }
 
+const groupCartItems = (cart: CartItem[]): Record<string, CartItem[]> => {
+    return cart.reduce((acc, item) => {
+      if (!acc[item._id]) {
+        acc[item._id] = [];
+      }
+      acc[item._id].push(item);
+      return acc;
+    }, {} as Record<string, CartItem[]>);
+  };
+
+const getUnitTypeInSpanish = (unitType: 'pieces' | 'boxes'): string => {
+return unitType === 'pieces' ? 'piezas' : 'cajas';
+};
+
 const SalesPage: React.FC = () => {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -122,22 +136,44 @@ const SalesPage: React.FC = () => {
   const handleAddToCart = () => {
     if (selectedProduct) {
       const updatedCart = [...cart];
-      const selectedUnitType = unitType;
+      let remainingQuantity = quantity;
+      const totalPieces = unitType === 'boxes' ? quantity * selectedProduct.piecesPerBox : quantity;
   
-      const existingItemIndex = updatedCart.findIndex(
-        item => item._id === selectedProduct._id && item.unitType === selectedUnitType
-      );
+      // Calcular cajas completas
+      if (totalPieces >= selectedProduct.piecesPerBox) {
+        const boxes = Math.floor(totalPieces / selectedProduct.piecesPerBox);
+        const existingBoxItem = updatedCart.find(
+          item => item._id === selectedProduct._id && item.unitType === 'boxes'
+        );
   
-      if (existingItemIndex !== -1) {
-        // If the item already exists in the cart, update its quantity
-        updatedCart[existingItemIndex].quantity += quantity;
-      } else {
-        // If it's a new item, add it to the cart
-        updatedCart.push({
-          ...selectedProduct,
-          quantity,
-          unitType: selectedUnitType,
-        });
+        if (existingBoxItem) {
+          existingBoxItem.quantity += boxes;
+        } else {
+          updatedCart.push({
+            ...selectedProduct,
+            quantity: boxes,
+            unitType: 'boxes',
+          });
+        }
+  
+        remainingQuantity = totalPieces % selectedProduct.piecesPerBox;
+      }
+  
+      // Agregar piezas restantes
+      if (remainingQuantity > 0) {
+        const existingPieceItem = updatedCart.find(
+          item => item._id === selectedProduct._id && item.unitType === 'pieces'
+        );
+  
+        if (existingPieceItem) {
+          existingPieceItem.quantity += remainingQuantity;
+        } else {
+          updatedCart.push({
+            ...selectedProduct,
+            quantity: remainingQuantity,
+            unitType: 'pieces',
+          });
+        }
       }
   
       setCart(updatedCart);
@@ -200,6 +236,27 @@ const SalesPage: React.FC = () => {
   if (status === 'loading') {
     return <div>Cargando...</div>;
   }
+
+  const calculateProductTotals = (items: CartItem[]): {
+    boxes: number;
+    loosePieces: number;
+    totalPieces: number;
+  } => {
+    let boxes = 0;
+    let loosePieces = 0;
+
+    items.forEach(item => {
+      if (item.unitType === 'boxes') {
+        boxes += item.quantity;
+      } else {
+        loosePieces += item.quantity;
+      }
+    });
+
+    const totalPieces = boxes * items[0].piecesPerBox + loosePieces;
+
+    return { boxes, loosePieces, totalPieces };
+  };
 
   return (
     <div className="min-h-screen bg-gray-100 p-4 flex">
@@ -381,17 +438,29 @@ const SalesPage: React.FC = () => {
           <h2 className="text-xl font-bold mb-4">Artículos en el carrito actualmente</h2>
           {cart.length > 0 ? (
             <div>
-              {cart.map((item, index) => (
-                <div key={index} className="mb-2 flex justify-between items-center">
-                  <span>{item.name} - {item.quantity} {item.unitType}</span>
-                  <button
-                    onClick={() => removeFromCart(item._id)}
-                    className="bg-red-500 text-white px-2 py-1 rounded text-sm"
-                  >
-                    Eliminar
-                  </button>
-                </div>
-              ))}
+              {Object.entries(groupCartItems(cart)).map(([productId, items]) => {
+                const { boxes, loosePieces, totalPieces } = calculateProductTotals(items);
+                return (
+                  <div key={productId} className="mb-4 p-3 bg-gray-100 rounded-lg">
+                    <h3 className="font-bold text-lg mb-2">{items[0].name}</h3>
+                    <p>
+                      {boxes > 0 && `${boxes} Cajas (${boxes * items[0].piecesPerBox} piezas)`}
+                      {boxes > 0 && loosePieces > 0 && ' + '}
+                      {loosePieces > 0 && `${loosePieces} Piezas`}
+                      {' = '}
+                      <span className="font-bold">{totalPieces} piezas en total</span>
+                    </p>
+                    <div className="mt-2 flex justify-end">
+                      <button
+                        onClick={() => removeFromCart(items[0]._id)}
+                        className="bg-red-500 text-white px-2 py-1 rounded text-sm"
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
               <div className="mt-4 font-bold text-xl">
                 Total: ${calculateTotal().toFixed(2)}
               </div>
