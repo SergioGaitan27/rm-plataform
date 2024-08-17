@@ -47,6 +47,7 @@ const SalesPage: React.FC = () => {
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [productInfoBottom, setProductInfoBottom] = useState<Product | null>(null);
   const quantityInputRef = useRef<HTMLInputElement>(null);
+  const [productSearchedFromBottom, setProductSearchedFromBottom] = useState(false);
 
   useEffect(() => {
     if (status === 'authenticated') {
@@ -75,11 +76,11 @@ const SalesPage: React.FC = () => {
       product.productCode.toLowerCase() === searchTermTop.toLowerCase() ||
       product.name.toLowerCase().includes(searchTermTop.toLowerCase())
     );
-
+  
     if (result) {
       setSelectedProduct(result);
       setProductInfoBottom(result);
-
+  
       if (result.boxCode.toLowerCase() === searchTermTop.toLowerCase()) {
         setUnitType('boxes');
       } else if (result.productCode.toLowerCase() === searchTermTop.toLowerCase()) {
@@ -88,9 +89,10 @@ const SalesPage: React.FC = () => {
     } else {
       setSelectedProduct(null);
       setProductInfoBottom(null);
+      setProductSearchedFromBottom(false);
     }
-
-    setSearchTermTop(''); // Limpia el input después de la búsqueda
+  
+    setSearchTermTop('');
   };
 
   const handleSearchBottom = (searchTerm: string) => {
@@ -114,72 +116,31 @@ const SalesPage: React.FC = () => {
     setProductInfoBottom(product);
     setSearchTermBottom(''); // Limpia el input después de seleccionar un producto
     setFilteredProducts([]); // Oculta la lista desplegable
+    setProductSearchedFromBottom(true);
   };
 
   const handleAddToCart = () => {
     if (selectedProduct) {
       const updatedCart = [...cart];
-
-      if (unitType === 'boxes') {
-        const existingBoxIndex = updatedCart.findIndex(
-          item => item._id === selectedProduct._id && item.unitType === 'boxes'
-        );
-
-        if (existingBoxIndex !== -1) {
-          updatedCart[existingBoxIndex].quantity += quantity;
-        } else {
-          updatedCart.push({
-            ...selectedProduct,
-            quantity,
-            unitType: 'boxes',
-          });
-        }
+      const selectedUnitType = unitType;
+  
+      const existingItemIndex = updatedCart.findIndex(
+        item => item._id === selectedProduct._id && item.unitType === selectedUnitType
+      );
+  
+      if (existingItemIndex !== -1) {
+        // If the item already exists in the cart, update its quantity
+        updatedCart[existingItemIndex].quantity += quantity;
       } else {
-        let totalPieces = quantity;
-
-        const existingPieceIndex = updatedCart.findIndex(
-          item => item._id === selectedProduct._id && item.unitType === 'pieces'
-        );
-
-        if (existingPieceIndex !== -1) {
-          totalPieces += updatedCart[existingPieceIndex].quantity;
-        }
-
-        const boxes = Math.floor(totalPieces / selectedProduct.piecesPerBox);
-        const remainingPieces = totalPieces % selectedProduct.piecesPerBox;
-
-        if (existingPieceIndex !== -1) {
-          updatedCart.splice(existingPieceIndex, 1);
-        }
-
-        if (boxes > 0) {
-          const existingBoxIndex = updatedCart.findIndex(
-            item => item._id === selectedProduct._id && item.unitType === 'boxes'
-          );
-
-          if (existingBoxIndex !== -1) {
-            updatedCart[existingBoxIndex].quantity += boxes;
-          } else {
-            updatedCart.push({
-              ...selectedProduct,
-              quantity: boxes,
-              unitType: 'boxes',
-            });
-          }
-        }
-
-        if (remainingPieces > 0) {
-          updatedCart.push({
-            ...selectedProduct,
-            quantity: remainingPieces,
-            unitType: 'pieces',
-          });
-        }
+        // If it's a new item, add it to the cart
+        updatedCart.push({
+          ...selectedProduct,
+          quantity,
+          unitType: selectedUnitType,
+        });
       }
-
+  
       setCart(updatedCart);
-
-      // Limpia el estado del componente superior izquierdo
       setSelectedProduct(null);
       setQuantity(1);
       setUnitType('pieces');
@@ -211,6 +172,29 @@ const SalesPage: React.FC = () => {
         handleSelectProduct(filteredProducts[0]);
       }
     }
+  };
+
+  const handleAddFromDetails = () => {
+    if (productInfoBottom) {
+      // Configurar el producto seleccionado en la parte superior izquierda
+      setSelectedProduct(productInfoBottom);
+      setUnitType('pieces');
+      setQuantity(1);
+      
+      // Limpiar la información del producto en la sección inferior
+      clearProductInfo();
+
+      // Opcional: hacer foco en el campo de cantidad
+      if (quantityInputRef.current) {
+        quantityInputRef.current.focus();
+      }
+    }
+  };
+
+  const clearProductInfo = () => {
+    setProductInfoBottom(null);
+    setSearchTermBottom('');
+    setProductSearchedFromBottom(false);
   };
 
   if (status === 'loading') {
@@ -343,48 +327,58 @@ const SalesPage: React.FC = () => {
           </div>
 
           {productInfoBottom && (
-            <div className="mt-4 flex space-x-4">
-              <div className="w-1/4">
-                {productInfoBottom.imageUrl ? (
-                  <Image 
-                    src={productInfoBottom.imageUrl} 
-                    alt={productInfoBottom.name} 
-                    width={100} 
-                    height={100} 
-                    className="object-cover"
-                  />
-                ) : (
-                  <div className="w-[100px] h-[100px] bg-gray-200 flex items-center justify-center">
-                    No imagen
-                  </div>
+            <div className="mt-4">
+                <div className="flex space-x-4">
+                <div className="w-1/4">
+                    {productInfoBottom.imageUrl ? (
+                    <Image 
+                        src={productInfoBottom.imageUrl} 
+                        alt={productInfoBottom.name} 
+                        width={100} 
+                        height={100} 
+                        className="object-cover"
+                    />
+                    ) : (
+                    <div className="w-[100px] h-[100px] bg-gray-200 flex items-center justify-center">
+                        No imagen
+                    </div>
+                    )}
+                </div>
+                <div>
+                    <h3 className="font-bold text-lg">{productInfoBottom.name}</h3>
+                    <p>Código de caja: {productInfoBottom.boxCode}</p>
+                    <p>Código de producto: {productInfoBottom.productCode}</p>
+                    <p>Piezas por caja: {productInfoBottom.piecesPerBox}</p>
+                    <p>Precio menudeo: ${productInfoBottom.price1.toFixed(2)} (Cantidad mínima: {productInfoBottom.price1MinQty})</p>
+                    <p>Precio mayoreo: ${productInfoBottom.price2.toFixed(2)} (Cantidad mínima: {productInfoBottom.price2MinQty})</p>
+                    <p>Precio caja: ${productInfoBottom.price3.toFixed(2)} (Cantidad mínima: {productInfoBottom.price3MinQty})</p>
+                    {productInfoBottom.price4 && <p>Precio 4: ${productInfoBottom.price4.toFixed(2)}</p>}
+                    {productInfoBottom.price5 && <p>Precio 5: ${productInfoBottom.price5.toFixed(2)}</p>}
+                    <h4 className="font-bold mt-2">Ubicaciones de stock:</h4>
+                    <ul>
+                    {productInfoBottom.stockLocations.map((location, index) => (
+                        <li key={index}>{location.location}: {location.quantity} unidades</li>
+                    ))}
+                    </ul>
+                </div>
+                </div>
+                {productSearchedFromBottom && (
+                <button 
+                    onClick={handleAddFromDetails}
+                    className="bg-green-500 text-white px-4 py-2 rounded mt-4 w-full"
+                >
+                    Agregar producto
+                </button>
                 )}
-              </div>
-              <div>
-                <h3 className="font-bold text-lg">{productInfoBottom.name}</h3>
-                <p>Código de caja: {productInfoBottom.boxCode}</p>
-                <p>Código de producto: {productInfoBottom.productCode}</p>
-                <p>Piezas por caja: {productInfoBottom.piecesPerBox}</p>
-                <p>Precio menudeo: ${productInfoBottom.price1.toFixed(2)} (Cantidad mínima: {productInfoBottom.price1MinQty})</p>
-                <p>Precio mayoreo: ${productInfoBottom.price2.toFixed(2)} (Cantidad mínima: {productInfoBottom.price2MinQty})</p>
-                <p>Precio caja: ${productInfoBottom.price3.toFixed(2)} (Cantidad mínima: {productInfoBottom.price3MinQty})</p>
-                {productInfoBottom.price4 && <p>Precio 4: ${productInfoBottom.price4.toFixed(2)}</p>}
-                {productInfoBottom.price5 && <p>Precio 5: ${productInfoBottom.price5.toFixed(2)}</p>}
-                <h4 className="font-bold mt-2">Ubicaciones de stock:</h4>
-                <ul>
-                  {productInfoBottom.stockLocations.map((location, index) => (
-                    <li key={index}>{location.location}: {location.quantity} unidades</li>
-                  ))}
-                </ul>
-              </div>
             </div>
-          )}
+            )}
         </div>
       </div>
       
       {/* Columna derecha: Previsualización del ticket */}
       <div className="w-1/2 pl-2">
         <div className="bg-white p-4 rounded shadow h-full overflow-y-auto">
-          <h2 className="text-xl font-bold mb-4">Artículos en el carrito actualmente:</h2>
+          <h2 className="text-xl font-bold mb-4">Artículos en el carrito actualmente</h2>
           {cart.length > 0 ? (
             <div>
               {cart.map((item, index) => (
