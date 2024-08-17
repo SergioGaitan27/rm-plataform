@@ -22,6 +22,8 @@ export interface IProduct extends Document {
   price5?: number;
   stockLocations: IStockLocation[];
   imageUrl?: string;
+  category: string; // Nuevo campo
+  availability: boolean; // Nuevo campo
 }
 
 const ProductSchema: Schema = new Schema({
@@ -42,7 +44,9 @@ const ProductSchema: Schema = new Schema({
     location: { type: String, required: true },
     quantity: { type: Number, required: true }
   }],
-  imageUrl: { type: String }
+  imageUrl: { type: String },
+  category: { type: String, default: 'Sin categoría' }, // Nuevo campo
+  availability: { type: Boolean, default: true } // Nuevo campo
 });
 
 export default mongoose.models.Product || mongoose.model<IProduct>('Product', ProductSchema);

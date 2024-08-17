@@ -1,5 +1,4 @@
-// app/administracion/page.tsx
-'use client';
+"use client"
 
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -28,7 +27,6 @@ const AdminPage = () => {
         { name: 'Créditos', allowedRoles: ['super_administrador', 'administrador'], icon: '💳' },
         { name: 'Catálogo', allowedRoles: ['super_administrador', 'administrador'], icon: '📚' },
         { name: 'Administración', allowedRoles: ['super_administrador', 'administrador'], icon: '⚙️' },
-        // { name: 'Configuración', allowedRoles: ['super_administrador', 'administrador'], icon: '🔧' },
         { name: 'Dashboard', allowedRoles: ['super_administrador', 'administrador'], icon: '🗂️' },
       ]);
       setLoading(false);
@@ -55,24 +53,21 @@ const AdminPage = () => {
 
   const adminCategories = [
     { name: 'Clientes', path: '/bajo-construccion', icon: '👥' },
-    // { name: 'Clientes', path: '/administracion/clientes', icon: '👥' },
     { name: 'Productos', path: '/administracion/productos', icon: '🗃️' },
-    // { name: 'Negocios', path: '/administracion/negocios', icon: '🏢' },
     { name: 'Negocios', path: '/bajo-construccion', icon: '🏢' },
     { name: 'Contenedores', path: '/administracion/contenedores', icon: '🚛' }, 
     { name: 'Transferencias', path: '/transferencias', icon: '↔️' }, 
-    { name: 'Inventario', path: '/administracion/inventario', icon: '📦' }
+    { name: 'Inventario', path: '/administracion/inventario', icon: '📦' },
+    { name: 'Actualización Masiva', path: '/administracion/actualizacion-masiva', icon: '🔄' } // Nueva categoría
   ];
 
   return (
     <div className="min-h-screen bg-black text-yellow-400 flex flex-col justify-between">
       <div className="p-4">
-        {/* Título de la página */}
         <div className="bg-gray-900 rounded-lg p-4 mb-6 shadow-md">
           <h1 className="text-3xl font-bold mb-4 text-center">Administración</h1>
         </div>
 
-        {/* Categorías de administración */}
         <div className="bg-gray-900 rounded-lg p-4 mb-6 shadow-md">
           <div className="grid grid-cols-2 gap-4">
             {adminCategories.map((category, index) => (
