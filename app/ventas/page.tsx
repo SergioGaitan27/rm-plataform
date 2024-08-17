@@ -222,12 +222,12 @@ const SalesPage: React.FC = () => {
       {/* Columna izquierda */}
       <div className="w-1/2 pr-2 flex flex-col">
         <div className="flex-1 bg-white p-4 mb-4 rounded shadow">
-          <h2 className="text-xl font-bold mb-4">Información del producto y piezas o cajas a agregar</h2>
+          <h2 className="text-xl font-bold mb-4">Agregar productos</h2>
           
           <div className="mb-4 flex">
             <input
               type="text"
-              placeholder="Buscar por código de caja, código de producto o nombre"
+              placeholder="Ingrese código de caja ó código de producto"
               value={searchTermTop}
               onChange={(e) => setSearchTermTop(e.target.value)}
               onKeyDown={handleKeyPressTop} // Añade funcionalidad para buscar al presionar Enter
@@ -310,12 +310,12 @@ const SalesPage: React.FC = () => {
         
         {/* Sección inferior: Buscador y información detallada del producto */}
         <div className="flex-1 bg-white p-4 rounded shadow overflow-y-auto relative">
-          <h2 className="text-xl font-bold mb-4">Información detallada del producto</h2>
+          <h2 className="text-xl font-bold mb-4">Información de productos</h2>
           
           <div className="mb-4 flex relative">
             <input
               type="text"
-              placeholder="Buscar producto para ver detalles"
+              placeholder="Buscar por código de caja, código de producto o nombre"
               value={searchTermBottom}
               onChange={(e) => handleSearchBottom(e.target.value)}
               onKeyDown={handleKeyPressBottom} // Añade funcionalidad para buscar al presionar Enter
@@ -364,10 +364,9 @@ const SalesPage: React.FC = () => {
                 <p>Código de caja: {productInfoBottom.boxCode}</p>
                 <p>Código de producto: {productInfoBottom.productCode}</p>
                 <p>Piezas por caja: {productInfoBottom.piecesPerBox}</p>
-                <p>Costo: ${productInfoBottom.cost.toFixed(2)}</p>
-                <p>Precio 1: ${productInfoBottom.price1.toFixed(2)} (Cantidad mínima: {productInfoBottom.price1MinQty})</p>
-                <p>Precio 2: ${productInfoBottom.price2.toFixed(2)} (Cantidad mínima: {productInfoBottom.price2MinQty})</p>
-                <p>Precio 3: ${productInfoBottom.price3.toFixed(2)} (Cantidad mínima: {productInfoBottom.price3MinQty})</p>
+                <p>Precio menudeo: ${productInfoBottom.price1.toFixed(2)} (Cantidad mínima: {productInfoBottom.price1MinQty})</p>
+                <p>Precio mayoreo: ${productInfoBottom.price2.toFixed(2)} (Cantidad mínima: {productInfoBottom.price2MinQty})</p>
+                <p>Precio caja: ${productInfoBottom.price3.toFixed(2)} (Cantidad mínima: {productInfoBottom.price3MinQty})</p>
                 {productInfoBottom.price4 && <p>Precio 4: ${productInfoBottom.price4.toFixed(2)}</p>}
                 {productInfoBottom.price5 && <p>Precio 5: ${productInfoBottom.price5.toFixed(2)}</p>}
                 <h4 className="font-bold mt-2">Ubicaciones de stock:</h4>
@@ -385,7 +384,7 @@ const SalesPage: React.FC = () => {
       {/* Columna derecha: Previsualización del ticket */}
       <div className="w-1/2 pl-2">
         <div className="bg-white p-4 rounded shadow h-full overflow-y-auto">
-          <h2 className="text-xl font-bold mb-4">Previsualización del ticket en tiempo real</h2>
+          <h2 className="text-xl font-bold mb-4">Artículos en el carrito actualmente:</h2>
           {cart.length > 0 ? (
             <div>
               {cart.map((item, index) => (
