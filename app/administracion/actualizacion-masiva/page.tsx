@@ -75,13 +75,18 @@ const MassUpdatePage = () => {
             <li>Precio 2: $90</li>
             <li>Cantidad mínima para Precio 2: 3</li>
             <li>Precio 3: $80</li>
-            <li>Cantidad mínima para Precio 3: 100</li>
+            <li>Cantidad mínima para Precio 3: Se establecerá al valor actual de &quot;Piezas por caja&quot;</li>
             <li>Precio 4: $50</li>
             <li>Precio 5: $30</li>
             <li>Costo: $10</li>
             <li>Categoría: &quot;Sin categoría&quot;</li>
             <li>Disponibilidad: true</li>
+            <li>Cantidad en ubicaciones: Se multiplicará por el valor de &quot;Piezas por caja&quot;</li>
           </ul>
+          <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4" role="alert">
+            <p className="font-bold">Advertencia</p>
+            <p>Esta acción modificará las cantidades en las ubicaciones. La nueva cantidad será el resultado de multiplicar la cantidad actual por el número de piezas por caja.</p>
+          </div>
           <button 
             onClick={handleUpdate} 
             disabled={isUpdating}
