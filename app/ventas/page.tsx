@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import ProductCard from '@/components/ProductCard'; 
 
 interface IStockLocation {
   location: string;
@@ -403,63 +404,15 @@ const SalesPage: React.FC = () => {
             </div>
 
             {selectedProduct && (
-              <>
-              <div className="flex items-start space-x-4">
-                <div className="w-1/4">
-                  {selectedProduct.imageUrl ? (
-                    <Image 
-                      src={selectedProduct.imageUrl} 
-                      alt={selectedProduct.name} 
-                      width={100} 
-                      height={100} 
-                      className="object-cover"
-                    />
-                  ) : (
-                    <div className="w-[100px] h-[100px] bg-gray-200 flex items-center justify-center">
-                      No imagen
-                    </div>
-                  )}
-                </div>
-                
-                <span className="text-2xl font-bold self-center">×</span>
-                
-                <div className="w-1/4 self-center">
-                  <Input
-                    type="number"
-                    min="1"
-                    value={quantity}
-                    onChange={(e) => setQuantity(parseInt(e.target.value))}
-                    ref={quantityInputRef}
-                    onFocus={(e) => e.target.select()}
-                    className="w-full"
-                  />
-                </div>
-                
-                <div className="flex flex-col space-y-2 w-1/4">
-                  <RadioGroup value={unitType} onValueChange={(value: 'pieces' | 'boxes') => setUnitType(value)}>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="pieces" id="pieces" />
-                      <Label htmlFor="pieces">Piezas</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="boxes" id="boxes" />
-                      <Label htmlFor="boxes">Cajas</Label>
-                    </div>
-                  </RadioGroup>
-                </div>
-              </div>
-              <Button 
-              onClick={handleAddToCart}
-              className={`w-full mt-4 ${
-                selectedProduct.availability ? 'bg-primary' : 'bg-gray-500 cursor-not-allowed'
-              }`}
-              disabled={!selectedProduct.availability}
-            >
-              {selectedProduct.availability ? 'Agregar' : 'No disponible'}
-            </Button>
-              </>
+              <ProductCard
+                product={selectedProduct}
+                quantity={quantity}
+                unitType={unitType}
+                onQuantityChange={setQuantity}
+                onUnitTypeChange={(value: 'pieces' | 'boxes') => setUnitType(value)}
+                onAddToCart={handleAddToCart}
+              />
             )}
-
           </CardContent>
         </Card>
         
