@@ -7,6 +7,7 @@ export interface UserDocument extends mongoose.Document {
   phone?: string;
   image?: string;
   role: 'super_administrador' | 'administrador' | 'vendedor' | 'cliente' | 'sistemas';
+  location: string; // Nuevo campo
   createdAt: Date;
   updatedAt: Date;
 }
@@ -41,6 +42,10 @@ const UserSchema = new Schema<UserDocument>(
       enum: ['super_administrador', 'administrador', 'vendedor', 'cliente', 'sistemas'],
       default: 'cliente',
       required: [true, "Role is required"],
+    },
+    location: {
+      type: String,
+      required: [true, "Location is required"],
     },
   },
   {

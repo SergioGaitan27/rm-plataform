@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { generateMetadata as generateMetadataHelper } from './generateMetadata'
 import { Metadata } from 'next'
+import { Toaster } from 'react-hot-toast'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -32,6 +33,7 @@ export default function RootLayout({
       <body>
         <Provider>
           {children}
+          <Toaster />
         </Provider>
       </body>
     </html>

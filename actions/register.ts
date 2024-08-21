@@ -4,7 +4,7 @@ import User from "@/models/User";
 import bcrypt from "bcryptjs";
 
 export const register = async (values: any) => {
-    const { email, password, name } = values;
+    const { email, password, name, location } = values;
 
     try {
         await connectDB();
@@ -19,10 +19,14 @@ export const register = async (values: any) => {
           name,
           email,
           password: hashedPassword,
+          location,
         });
         const savedUser = await user.save();
 
+        return { success: true, user: savedUser };
+
     }catch(e){
         console.log(e);
+        return { error: 'An error occurred during registration' };
     }
 }

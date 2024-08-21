@@ -7,6 +7,7 @@ import Image from 'next/image';
 
 export default function Register() {
   const [error, setError] = useState<string>();
+  const [location, setLocation] = useState<string>('');
   const router = useRouter();
   const ref = useRef<HTMLFormElement>(null);
 
@@ -14,15 +15,22 @@ export default function Register() {
     const r = await register({
       email: formData.get("email"),
       password: formData.get("password"),
-      name: formData.get("name")    
+      name: formData.get("name"),
+      location: formData.get("location")
     });
     ref.current?.reset();
     if(r?.error){
       setError(r.error);
       return;
+    } else if (r?.success) {
+      router.push("/login");
     } else {
-      return router.push("/login");
+      setError("An unexpected error occurred");
     }
+  };
+
+  const handleLocationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLocation(e.target.value.toUpperCase());
   };
 
   return (
@@ -71,6 +79,19 @@ export default function Register() {
             className="w-full px-4 py-3 bg-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 text-white"
             name="password"
             autoComplete="new-password"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-semibold mb-2" htmlFor="location">Ubicación</label>
+          <input
+            id="location"
+            type="text"
+            placeholder="Ingresa tu ubicación"
+            className="w-full px-4 py-3 bg-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 text-white uppercase"
+            name="location"
+            value={location}
+            onChange={handleLocationChange}
           />
         </div>
         

@@ -23,6 +23,7 @@ interface ProductCardProps {
   onQuantityChange: (quantity: number) => void;
   onUnitTypeChange: (unitType: 'pieces' | 'boxes') => void;
   onAddToCart: () => void;
+  isAvailable: boolean; // Agregamos esta prop
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ 
@@ -31,7 +32,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
   unitType, 
   onQuantityChange, 
   onUnitTypeChange, 
-  onAddToCart 
+  onAddToCart,
+  isAvailable // Agregamos esta prop
 }) => {
   const handleInputClick = (e: React.MouseEvent<HTMLInputElement>) => {
     e.currentTarget.select();
@@ -111,9 +113,9 @@ const ProductCard: React.FC<ProductCardProps> = ({
           <Button 
             onClick={onAddToCart}
             className="w-full"
-            disabled={!product.availability}
+            disabled={!isAvailable} // Usamos isAvailable en lugar de product.availability
           >
-            {product.availability ? 'Agregar' : 'No disponible'}
+            {isAvailable ? 'Agregar' : 'No disponible'}
           </Button>
         </div>
       </CardContent>

@@ -1,3 +1,5 @@
+// app/lib/auth.ts
+
 import { connectDB } from "@/lib/mongodb";
 import User from "@/models/User";
 import type { NextAuthOptions, User as AuthUser } from "next-auth";
@@ -46,6 +48,7 @@ export const authOptions: NextAuthOptions = {
             role: user.role as UserRole,
             phone: user.phone,
             image: user.image,
+            location: user.location, // Agregamos el campo location
           };
         } catch (error) {
           console.error("Error in authorize function:", error);
@@ -61,6 +64,7 @@ export const authOptions: NextAuthOptions = {
         token.role = (user as AuthUser & { role: UserRole }).role;
         token.phone = (user as AuthUser & { phone?: string }).phone;
         token.image = (user as AuthUser & { image?: string }).image;
+        token.location = (user as AuthUser & { location?: string }).location; // Agregamos el campo location
       }
       return token;
     },
@@ -70,6 +74,7 @@ export const authOptions: NextAuthOptions = {
         session.user.role = token.role as UserRole;
         session.user.phone = token.phone as string | undefined;
         session.user.image = token.image as string | undefined;
+        session.user.location = token.location as string | undefined; // Agregamos el campo location
       }
       return session;
     },

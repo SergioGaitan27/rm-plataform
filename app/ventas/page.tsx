@@ -11,6 +11,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import ProductCard from '@/components/ProductCard'; 
+import { toast } from 'react-hot-toast';
 
 interface IStockLocation {
   location: string;
@@ -81,14 +82,11 @@ const calculateProductTotals = (items: CartItem[]): {
   return { boxes, loosePieces, totalPieces };
 };
 
-const getUnitTypeInSpanish = (unitType: 'pieces' | 'boxes'): string => {
-  return unitType === 'pieces' ? 'piezas' : 'cajas';
-};
-
 const SalesPage: React.FC = () => {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
+  const [userLocation, setUserLocation] = useState<string>('');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [quantity, setQuantity] = useState(1);
@@ -104,14 +102,29 @@ const SalesPage: React.FC = () => {
   const [amountPaid, setAmountPaid] = useState('');
   const [change, setChange] = useState(0);
   const amountPaidInputRef = useRef<HTMLInputElement>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    if (status === 'authenticated') {
+    if (status === 'authenticated' && session?.user) {
+      fetchUserLocation();
       fetchProducts();
     } else if (status === 'unauthenticated') {
       router.push('/login');
     }
-  }, [status, router]);
+  }, [status, router, session]);
+
+  const fetchUserLocation = async () => {
+    try {
+      const response = await fetch('/api/user/location');
+      if (!response.ok) {
+        throw new Error('Error al obtener la ubicación del usuario');
+      }
+      const data = await response.json();
+      setUserLocation(data.location);
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
 
   const fetchProducts = async () => {
     try {
@@ -124,6 +137,12 @@ const SalesPage: React.FC = () => {
     } catch (error) {
       console.error('Error:', error);
     }
+  };
+
+  const isProductAvailableInLocation = (product: Product): boolean => {
+    return product.stockLocations.some(location => 
+      location.location === userLocation && location.quantity > 0
+    );
   };
 
   const handleSearchTop = () => {
@@ -193,56 +212,60 @@ const SalesPage: React.FC = () => {
   };
 
   const handleAddToCart = () => {
-    if (selectedProduct && selectedProduct.availability) {
-      const updatedCart = [...cart];
-      const totalPieces = unitType === 'boxes' ? quantity * selectedProduct.piecesPerBox : quantity;
-      
-      const existingCartItems = updatedCart.filter(item => item._id === selectedProduct._id);
-      const existingTotalPieces = existingCartItems.reduce((total, item) => {
-        return total + (item.unitType === 'boxes' ? item.quantity * item.piecesPerBox : item.quantity);
-      }, 0);
-      
-      const newTotalPieces = existingTotalPieces + totalPieces;
-      const appliedPrice = calculatePrice(selectedProduct, newTotalPieces);
+    if (selectedProduct) {
+      if (isProductAvailableInLocation(selectedProduct)) {
+        const updatedCart = [...cart];
+        const totalPieces = unitType === 'boxes' ? quantity * selectedProduct.piecesPerBox : quantity;
+        
+        const existingCartItems = updatedCart.filter(item => item._id === selectedProduct._id);
+        const existingTotalPieces = existingCartItems.reduce((total, item) => {
+          return total + (item.unitType === 'boxes' ? item.quantity * item.piecesPerBox : item.quantity);
+        }, 0);
+        
+        const newTotalPieces = existingTotalPieces + totalPieces;
+        const appliedPrice = calculatePrice(selectedProduct, newTotalPieces);
 
-      if (unitType === 'boxes') {
-        const existingBoxItem = existingCartItems.find(item => item.unitType === 'boxes');
-        if (existingBoxItem) {
-          existingBoxItem.quantity += quantity;
-          existingBoxItem.appliedPrice = appliedPrice;
+        if (unitType === 'boxes') {
+          const existingBoxItem = existingCartItems.find(item => item.unitType === 'boxes');
+          if (existingBoxItem) {
+            existingBoxItem.quantity += quantity;
+            existingBoxItem.appliedPrice = appliedPrice;
+          } else {
+            updatedCart.push({
+              ...selectedProduct,
+              quantity,
+              unitType: 'boxes',
+              appliedPrice,
+            });
+          }
         } else {
-          updatedCart.push({
-            ...selectedProduct,
-            quantity,
-            unitType: 'boxes',
-            appliedPrice,
-          });
+          const existingPieceItem = existingCartItems.find(item => item.unitType === 'pieces');
+          if (existingPieceItem) {
+            existingPieceItem.quantity += quantity;
+            existingPieceItem.appliedPrice = appliedPrice;
+          } else {
+            updatedCart.push({
+              ...selectedProduct,
+              quantity,
+              unitType: 'pieces',
+              appliedPrice,
+            });
+          }
         }
+
+        updatedCart.forEach(item => {
+          if (item._id === selectedProduct._id) {
+            item.appliedPrice = appliedPrice;
+          }
+        });
+
+        setCart(updatedCart);
+        setSelectedProduct(null);
+        setQuantity(1);
+        setUnitType('pieces');
       } else {
-        const existingPieceItem = existingCartItems.find(item => item.unitType === 'pieces');
-        if (existingPieceItem) {
-          existingPieceItem.quantity += quantity;
-          existingPieceItem.appliedPrice = appliedPrice;
-        } else {
-          updatedCart.push({
-            ...selectedProduct,
-            quantity,
-            unitType: 'pieces',
-            appliedPrice,
-          });
-        }
+        toast.error('Este producto no está disponible en tu ubicación o no tiene inventario.');
       }
-
-      updatedCart.forEach(item => {
-        if (item._id === selectedProduct._id) {
-          item.appliedPrice = appliedPrice;
-        }
-      });
-
-      setCart(updatedCart);
-      setSelectedProduct(null);
-      setQuantity(1);
-      setUnitType('pieces');
     }
   };
 
@@ -335,7 +358,7 @@ const SalesPage: React.FC = () => {
       setChange(0);
     } else {
       setAmountPaid('');
-      setChange(0);
+      setChange(0); 
       // Enfocamos el input cuando cambiamos a efectivo
       setTimeout(() => {
         amountPaidInputRef.current?.focus();
@@ -366,11 +389,66 @@ const SalesPage: React.FC = () => {
     return "text-red-500";
   };
 
-  const handlePayment = () => {
-    // Aquí iría la lógica para procesar el pago
-    handleClosePaymentModal();
-    setCart([]);
-    // Podrías agregar un mensaje de éxito o redirigir aquí
+  const handlePayment = async () => {
+    setIsLoading(true);
+    const ticketData = {
+      items: cart.map(item => ({
+        productId: item._id,
+        productName: item.name,
+        quantity: item.quantity,
+        unitType: item.unitType,
+        pricePerUnit: item.appliedPrice,
+        total: item.appliedPrice * item.quantity * (item.unitType === 'boxes' ? item.piecesPerBox : 1)
+      })),
+      totalAmount: calculateTotal(),
+      paymentType,
+      amountPaid: parseFloat(amountPaid),
+      change
+    };
+
+    try {
+      const response = await fetch('/api/tickets', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(ticketData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al guardar el ticket');
+      }
+
+      const data = await response.json();
+
+      // Actualizar los productos en el estado local
+      setProducts(prevProducts => {
+        const updatedProducts = [...prevProducts];
+        data.updatedProducts.forEach((updatedProduct: Product) => {
+          const index = updatedProducts.findIndex(p => p._id === updatedProduct._id);
+          if (index !== -1) {
+            updatedProducts[index] = updatedProduct;
+          }
+        });
+        return updatedProducts;
+      });
+
+      // Limpiar el carrito y cerrar el modal de pago
+      handleClosePaymentModal();
+      setCart([]);
+      
+      // Mostrar mensaje de éxito
+      toast.success('Pago procesado exitosamente');
+
+      // Limpiar la información del producto seleccionado
+      setProductInfoBottom(null);
+      setSearchTermBottom('');
+    } catch (error) {
+      console.error('Error al procesar el pago:', error);
+      toast.error('Error al procesar el pago');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (status === 'loading') {
@@ -405,17 +483,18 @@ const SalesPage: React.FC = () => {
 
             {selectedProduct && (
               <ProductCard
-                product={selectedProduct}
-                quantity={quantity}
-                unitType={unitType}
-                onQuantityChange={setQuantity}
-                onUnitTypeChange={(value: 'pieces' | 'boxes') => setUnitType(value)}
-                onAddToCart={handleAddToCart}
+              product={selectedProduct}
+              quantity={quantity}
+              unitType={unitType}
+              onQuantityChange={setQuantity}
+              onUnitTypeChange={(value: 'pieces' | 'boxes') => setUnitType(value)}
+              onAddToCart={handleAddToCart}
+              isAvailable={isProductAvailableInLocation(selectedProduct)}
               />
             )}
           </CardContent>
         </Card>
-        
+       
         <Card className="flex-grow overflow-hidden flex flex-col">
           <CardHeader className="flex-shrink-0">
             <CardTitle>Información de productos</CardTitle>
@@ -571,8 +650,8 @@ const SalesPage: React.FC = () => {
         )}
       </div>
 
-      {/* Modal de Pago */}
-      <Dialog open={isPaymentModalOpen} onOpenChange={setIsPaymentModalOpen}>
+       {/* Modal de Pago */}
+       <Dialog open={isPaymentModalOpen} onOpenChange={setIsPaymentModalOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Procesar Pago</DialogTitle>
@@ -609,12 +688,12 @@ const SalesPage: React.FC = () => {
             <p className="font-bold">Total a pagar: ${calculateTotal().toFixed(2)}</p>
           </div>
           <DialogFooter>
-            <Button onClick={handleClosePaymentModal} variant="outline">Cancelar</Button>
+            <Button onClick={handleClosePaymentModal} variant="outline" disabled={isLoading}>Cancelar</Button>
             <Button 
               onClick={handlePayment}
-              disabled={paymentType === 'cash' && change < 0}
+              disabled={paymentType === 'cash' && change < 0 || isLoading}
             >
-              Confirmar Pago
+              {isLoading ? 'Procesando...' : 'Confirmar Pago'}
             </Button>
           </DialogFooter>
         </DialogContent>
