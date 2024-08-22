@@ -50,7 +50,7 @@ const PrinterConfigPage: React.FC = () => {
   const handleSaveConfig = () => {
     localStorage.setItem('printerConfig', JSON.stringify(config));
     toast.success('Configuración de impresora guardada');
-    router.push('/sales');
+    router.push('/ventas');
   };
 
   return (
