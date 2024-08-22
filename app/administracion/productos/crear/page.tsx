@@ -33,6 +33,8 @@ interface ProductForm {
   price5: number | undefined;
   stockLocations: StockLocation[];
   imageUrl?: string;
+  category: string; // New field
+  availability: boolean; // New field
 }
 
 type PrecioPlaceholders = {
@@ -72,6 +74,8 @@ const CreateProductPage: React.FC = () => {
     price4: undefined,
     price5: undefined,
     stockLocations: [],
+    category: '', // Default category
+    availability: true,
   });
 
   const [newLocation, setNewLocation] = useState<StockLocation>({ location: '', quantity: undefined });
@@ -171,11 +175,12 @@ const CreateProductPage: React.FC = () => {
     });
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
     setProduct(prev => ({
       ...prev,
-      [name]: value === '' ? undefined : 
+      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked :
+        value === '' ? undefined : 
         (name.includes('price') || name === 'cost' || name.includes('MinQty') || name === 'piecesPerBox') 
           ? (value === '' ? undefined : Number(value))
           : value.toUpperCase()
@@ -274,6 +279,8 @@ const CreateProductPage: React.FC = () => {
         price3MinQty: showPrices ? product.price3MinQty : 0,
         price4: showPrices ? product.price4 : 0,
         price5: showPrices ? product.price5 : 0,
+        category: product.category,
+        availability: product.availability,
       };
 
       const response = await fetch('/api/products', {
@@ -310,6 +317,8 @@ const CreateProductPage: React.FC = () => {
           price4: undefined,
           price5: undefined,
           stockLocations: [],
+          category: 'PAPELERÍA', // Añade este campo
+          availability: true,
         });
         setImageFile(null);
         setIsConfirmed(false);
@@ -401,6 +410,32 @@ const CreateProductPage: React.FC = () => {
                     className="w-full p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400"
                     required
                   />
+                  <select
+                    name="category"
+                    value={product.category}
+                    onChange={handleInputChange}
+                    className="w-full p-2 bg-gray-900 border border-yellow-400 rounded text-yellow-400"
+                    required
+                  >
+                    <option value="" disabled selected>Seleccionar categoría</option>
+                    <option value="PAPELERÍA">PAPELERÍA</option>
+                    <option value="NAVIDAD">NAVIDAD</option>
+                  </select>
+
+                  {/* New Availability field */}
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="availability"
+                      name="availability"
+                      checked={product.availability}
+                      onChange={handleInputChange}
+                      className="form-checkbox h-5 w-5 text-yellow-400"
+                    />
+                    <label htmlFor="availability" className="text-yellow-400">
+                      Disponible
+                    </label>
+                  </div>
                 </div>
               </fieldset>
 

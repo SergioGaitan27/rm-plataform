@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import ProductCard from '@/components/ProductCard'; 
 import { toast } from 'react-hot-toast';
+import ProductInfo from '@/components/ProductInfo';
 
 interface IStockLocation {
   location: string;
@@ -211,61 +212,95 @@ const SalesPage: React.FC = () => {
     return product.price1;
   };
 
+  const getAvailableQuantity = (product: Product): number => {
+    const locationStock = product.stockLocations.find(location => location.location === userLocation);
+    return locationStock ? locationStock.quantity : 0;
+  };
+
+  const getRemainingQuantity = (product: Product): number => {
+    const availableQuantity = getAvailableQuantity(product);
+    const cartQuantity = cart
+      .filter(item => item._id === product._id)
+      .reduce((total, item) => total + (item.unitType === 'boxes' ? item.quantity * item.piecesPerBox : item.quantity), 0);
+    return availableQuantity - cartQuantity;
+  };
+
   const handleAddToCart = () => {
     if (selectedProduct) {
-      if (isProductAvailableInLocation(selectedProduct)) {
-        const updatedCart = [...cart];
-        const totalPieces = unitType === 'boxes' ? quantity * selectedProduct.piecesPerBox : quantity;
-        
-        const existingCartItems = updatedCart.filter(item => item._id === selectedProduct._id);
-        const existingTotalPieces = existingCartItems.reduce((total, item) => {
-          return total + (item.unitType === 'boxes' ? item.quantity * item.piecesPerBox : item.quantity);
-        }, 0);
-        
-        const newTotalPieces = existingTotalPieces + totalPieces;
-        const appliedPrice = calculatePrice(selectedProduct, newTotalPieces);
-
-        if (unitType === 'boxes') {
-          const existingBoxItem = existingCartItems.find(item => item.unitType === 'boxes');
-          if (existingBoxItem) {
-            existingBoxItem.quantity += quantity;
-            existingBoxItem.appliedPrice = appliedPrice;
-          } else {
-            updatedCart.push({
-              ...selectedProduct,
-              quantity,
-              unitType: 'boxes',
-              appliedPrice,
-            });
-          }
-        } else {
-          const existingPieceItem = existingCartItems.find(item => item.unitType === 'pieces');
-          if (existingPieceItem) {
-            existingPieceItem.quantity += quantity;
-            existingPieceItem.appliedPrice = appliedPrice;
-          } else {
-            updatedCart.push({
-              ...selectedProduct,
-              quantity,
-              unitType: 'pieces',
-              appliedPrice,
-            });
-          }
-        }
-
-        updatedCart.forEach(item => {
-          if (item._id === selectedProduct._id) {
-            item.appliedPrice = appliedPrice;
-          }
-        });
-
-        setCart(updatedCart);
-        setSelectedProduct(null);
-        setQuantity(1);
-        setUnitType('pieces');
-      } else {
-        toast.error('Este producto no está disponible en tu ubicación o no tiene inventario.');
+      const remainingQuantity = getRemainingQuantity(selectedProduct);
+      const quantityToAdd = unitType === 'boxes' ? quantity * selectedProduct.piecesPerBox : quantity;
+  
+      if (quantityToAdd > remainingQuantity) {
+        toast.error(`No hay suficiente inventario. Cantidad disponible: ${remainingQuantity} piezas.`);
+        return;
       }
+  
+      const updatedCart = [...cart];
+      
+      // Encontrar todos los items del mismo producto en el carrito
+      const existingItems = updatedCart.filter(item => item._id === selectedProduct._id);
+      
+      // Calcular la cantidad total de este producto en el carrito
+      const totalQuantityInCart = existingItems.reduce((total, item) => 
+        total + (item.unitType === 'boxes' ? item.quantity * item.piecesPerBox : item.quantity), 0);
+  
+      // Añadir la nueva cantidad
+      const newTotalQuantity = totalQuantityInCart + quantityToAdd;
+  
+      // Calcular el nuevo precio basado en la cantidad total
+      const newAppliedPrice = calculatePrice(selectedProduct, newTotalQuantity);
+  
+      const existingItemIndex = updatedCart.findIndex(
+        item => item._id === selectedProduct._id && item.unitType === unitType
+      );
+  
+      if (existingItemIndex !== -1) {
+        // Actualizar item existente
+        updatedCart[existingItemIndex] = {
+          ...updatedCart[existingItemIndex],
+          quantity: updatedCart[existingItemIndex].quantity + quantity,
+          appliedPrice: newAppliedPrice
+        };
+      } else {
+        // Añadir nuevo item
+        updatedCart.push({
+          ...selectedProduct,
+          quantity,
+          unitType,
+          appliedPrice: newAppliedPrice
+        });
+      }
+  
+      // Actualizar precios para todos los items del mismo producto
+      updatedCart.forEach(item => {
+        if (item._id === selectedProduct._id) {
+          item.appliedPrice = newAppliedPrice;
+        }
+      });
+  
+      setCart(updatedCart);
+      setSelectedProduct(null);
+      setQuantity(1);
+      setUnitType('pieces');
+      toast.success('Producto añadido al carrito');
+    }
+  };
+
+  const handleQuantityChange = (newQuantity: number) => {
+    if (selectedProduct) {
+      const remainingQuantity = getRemainingQuantity(selectedProduct);
+      const maxQuantity = unitType === 'boxes' 
+        ? Math.floor(remainingQuantity / selectedProduct.piecesPerBox)
+        : remainingQuantity;
+  
+      if (newQuantity > maxQuantity) {
+        toast.error(`La cantidad máxima disponible es ${maxQuantity} ${unitType === 'boxes' ? 'cajas' : 'piezas'}.`);
+        setQuantity(maxQuantity);
+      } else {
+        setQuantity(newQuantity);
+      }
+    } else {
+      setQuantity(newQuantity);
     }
   };
 
@@ -389,6 +424,10 @@ const SalesPage: React.FC = () => {
     return "text-red-500";
   };
 
+  const isProductAvailable = (product: Product): boolean => {
+    return product.availability && getRemainingQuantity(product) > 0;
+  };
+
   const handlePayment = async () => {
     setIsLoading(true);
     const ticketData = {
@@ -480,18 +519,25 @@ const SalesPage: React.FC = () => {
                 Buscar
               </Button>
             </div>
-
             {selectedProduct && (
+            <div className={`border-2 ${isProductAvailable(selectedProduct) ? 'border-green-500' : 'border-red-500'} rounded-lg p-4 mb-4`}>
               <ProductCard
-              product={selectedProduct}
-              quantity={quantity}
-              unitType={unitType}
-              onQuantityChange={setQuantity}
-              onUnitTypeChange={(value: 'pieces' | 'boxes') => setUnitType(value)}
-              onAddToCart={handleAddToCart}
-              isAvailable={isProductAvailableInLocation(selectedProduct)}
+                product={selectedProduct}
+                quantity={quantity}
+                unitType={unitType}
+                onQuantityChange={handleQuantityChange}
+                onUnitTypeChange={(value: 'pieces' | 'boxes') => {
+                  setUnitType(value);
+                  setQuantity(1); // Reset quantity when changing unit type
+                }}
+                onAddToCart={handleAddToCart}
+                isAvailable={getRemainingQuantity(selectedProduct) > 0}
+                maxQuantity={unitType === 'boxes' 
+                  ? Math.floor(getRemainingQuantity(selectedProduct) / selectedProduct.piecesPerBox)
+                  : getRemainingQuantity(selectedProduct)}
               />
-            )}
+            </div>
+          )}
           </CardContent>
         </Card>
        
@@ -500,90 +546,20 @@ const SalesPage: React.FC = () => {
             <CardTitle>Información de productos</CardTitle>
           </CardHeader>
           <CardContent className="flex-grow overflow-y-auto">
-            <div className="mb-4 mt-4 flex relative">
-              <Input
-                type="text"
-                placeholder="Buscar por código, nombre o categoría"
-                value={searchTermBottom}
-                onChange={handleSearchBottomChange}
-                onKeyDown={handleKeyPressBottom}
-                className="flex-grow"
-              />
-              <Button
-                onClick={() => handleSearchBottom(searchTermBottom)}
-                className="ml-2"
-              >
-                Buscar
-              </Button>
-              {filteredProducts.length > 0 && (
-                <ul className="absolute z-10 bg-white border rounded shadow-lg w-full mt-12 max-h-40 overflow-y-auto">
-                  {filteredProducts.map((product) => (
-                    <li
-                      key={product._id}
-                      onClick={() => handleSelectProduct(product)}
-                      className="p-2 hover:bg-gray-100 cursor-pointer"
-                    >
-                      {product.name} | {product.productCode} | ({product.boxCode})
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-
-            {productInfoBottom && (
-              <div className="mt-4">
-                <div className="flex space-x-4">
-                  <div className="w-1/4">
-                    {productInfoBottom.imageUrl ? (
-                      <Image 
-                        src={productInfoBottom.imageUrl} 
-                        alt={productInfoBottom.name} 
-                        width={100} 
-                        height={100} 
-                        className="object-cover"
-                      />
-                    ) : (
-                      <div className="w-[100px] h-[100px] bg-gray-200 flex items-center justify-center">
-                        No imagen
-                      </div>
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-lg">{productInfoBottom.name}</h3>
-                    <p>Código de caja: {productInfoBottom.boxCode}</p>
-                    <p>Código de producto: {productInfoBottom.productCode}</p>
-                    <p>Categoría: {productInfoBottom.category}</p>
-                    <p>Disponibilidad: {productInfoBottom.availability ? 'Disponible' : 'No disponible'}</p>
-                    <p>Piezas por caja: {productInfoBottom.piecesPerBox}</p>
-                    <p>Precio menudeo: ${productInfoBottom.price1.toFixed(2)} (Cantidad mínima: {productInfoBottom.price1MinQty})</p>
-                    <p>Precio mayoreo: ${productInfoBottom.price2.toFixed(2)} (Cantidad mínima: {productInfoBottom.price2MinQty})</p>
-                    <p>Precio caja: ${productInfoBottom.price3.toFixed(2)} (Cantidad mínima: {productInfoBottom.price3MinQty})</p>
-                    {productInfoBottom.price4 && <p>Precio 4: ${productInfoBottom.price4.toFixed(2)}</p>}
-                    {productInfoBottom.price5 && <p>Precio 5: ${productInfoBottom.price5.toFixed(2)}</p>}
-                    <h4 className="font-bold mt-2">Ubicaciones de stock:</h4>
-                    <ul>
-                      {calculateStockDisplay(productInfoBottom.stockLocations, productInfoBottom.piecesPerBox).map((location, index) => (
-                        <li key={index}>
-                          {location.location}: 
-                          {location.boxes > 0 && ` ${location.boxes} ${location.boxes === 1 ? 'caja' : 'cajas'}`}
-                          {location.boxes > 0 && location.loosePieces > 0 && ' y'}
-                          {location.loosePieces > 0 && ` ${location.loosePieces} ${location.loosePieces === 1 ? 'pieza' : 'piezas'}`}
-                          {' | Total: '}{location.total} {location.total === 1 ? 'pieza' : 'piezas'}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-                {productSearchedFromBottom && (
-                  <Button 
-                    onClick={handleAddFromDetails}
-                    className="bg-green-500 text-white px-4 py-2 rounded mt-4 w-full"
-                  >
-                    Agregar producto
-                  </Button>
-                )}
-              </div>
-            )}
+            <ProductInfo
+              searchTermBottom={searchTermBottom}
+              handleSearchBottomChange={handleSearchBottomChange}
+              handleKeyPressBottom={handleKeyPressBottom}
+              handleSearchBottom={handleSearchBottom}
+              filteredProducts={filteredProducts}
+              handleSelectProduct={handleSelectProduct}
+              productInfoBottom={productInfoBottom}
+              getRemainingQuantity={getRemainingQuantity}
+              isProductAvailable={isProductAvailable}
+              handleAddFromDetails={handleAddFromDetails}
+              productSearchedFromBottom={productSearchedFromBottom}
+              calculateStockDisplay={calculateStockDisplay}
+            />
           </CardContent>
         </Card>
       </div>

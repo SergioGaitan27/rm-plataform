@@ -58,7 +58,8 @@ const AdminPage = () => {
     { name: 'Contenedores', path: '/administracion/contenedores', icon: '🚛' }, 
     { name: 'Transferencias', path: '/transferencias', icon: '↔️' }, 
     { name: 'Inventario', path: '/administracion/inventario', icon: '📦' },
-    { name: 'Actualización Masiva', path: '/administracion/actualizacion-masiva', icon: '🔄' } // Nueva categoría
+    { name: 'Actualización Masiva', path: '/administracion/actualizacion-masiva', icon: '🔄' },
+    { name: 'Punto de venta', path: '/ventas', icon: '🛒' }
   ];
 
   return (

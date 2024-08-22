@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -31,15 +31,7 @@ const TransferenciaDetalle = ({ params }: { params: { transferNumber: string } }
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (status === 'authenticated') {
-      fetchTransferDetails();
-    } else if (status === 'unauthenticated') {
-      router.push('/login');
-    }
-  }, [status, router, params.transferNumber]);
-
-  const fetchTransferDetails = async () => {
+  const fetchTransferDetails = useCallback(async () => {
     try {
       const response = await fetch(`/api/transfers/${params.transferNumber}`);
       if (!response.ok) {
@@ -54,7 +46,15 @@ const TransferenciaDetalle = ({ params }: { params: { transferNumber: string } }
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [params.transferNumber]);
+
+  useEffect(() => {
+    if (status === 'authenticated') {
+      fetchTransferDetails();
+    } else if (status === 'unauthenticated') {
+      router.push('/login');
+    }
+  }, [status, router, fetchTransferDetails]);
 
   if (status === 'loading' || isLoading) return <LoadingSpinner />;
   if (!session) return null;

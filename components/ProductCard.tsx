@@ -23,7 +23,8 @@ interface ProductCardProps {
   onQuantityChange: (quantity: number) => void;
   onUnitTypeChange: (unitType: 'pieces' | 'boxes') => void;
   onAddToCart: () => void;
-  isAvailable: boolean; // Agregamos esta prop
+  isAvailable: boolean;
+  maxQuantity: number;
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ 
@@ -33,10 +34,17 @@ const ProductCard: React.FC<ProductCardProps> = ({
   onQuantityChange, 
   onUnitTypeChange, 
   onAddToCart,
-  isAvailable // Agregamos esta prop
+  isAvailable,
+  maxQuantity 
 }) => {
   const handleInputClick = (e: React.MouseEvent<HTMLInputElement>) => {
     e.currentTarget.select();
+  };
+
+  const handleQuantityChange = (newQuantity: number) => {
+    // Asegurarse de que la nueva cantidad no exceda maxQuantity
+    const clampedQuantity = Math.min(Math.max(1, newQuantity), maxQuantity);
+    onQuantityChange(clampedQuantity);
   };
 
   return (
@@ -68,25 +76,30 @@ const ProductCard: React.FC<ProductCardProps> = ({
         <div className="w-2/5 flex flex-col justify-center space-y-2">
           <div className="flex items-center justify-center space-x-2 pb-4">
             <Button 
-              onClick={() => onQuantityChange(quantity - 1)}
+              onClick={() => handleQuantityChange(quantity - 1)}
               disabled={quantity <= 1}
               size="sm"
               variant="outline"
+              aria-label="Disminuir cantidad"
             >
               <Minus className="h-4 w-4" />
             </Button>
             <Input
               type="number"
               min="1"
+              max={maxQuantity}
               value={quantity}
-              onChange={(e) => onQuantityChange(parseInt(e.target.value) || 1)}
+              onChange={(e) => handleQuantityChange(parseInt(e.target.value) || 1)}
               onClick={handleInputClick}
               className="w-16 text-center no-spinners"
+              aria-label="Cantidad"
             />
             <Button 
-              onClick={() => onQuantityChange(quantity + 1)}
+              onClick={() => handleQuantityChange(quantity + 1)}
+              disabled={quantity >= maxQuantity}
               size="sm"
               variant="outline"
+              aria-label="Aumentar cantidad"
             >
               <Plus className="h-4 w-4" />
             </Button>
@@ -113,7 +126,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
           <Button 
             onClick={onAddToCart}
             className="w-full"
-            disabled={!isAvailable} // Usamos isAvailable en lugar de product.availability
+            disabled={!isAvailable || quantity === 0}
           >
             {isAvailable ? 'Agregar' : 'No disponible'}
           </Button>

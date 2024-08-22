@@ -2,7 +2,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -62,10 +62,6 @@ const HistorialTransferencias: React.FC = () => {
     initialize();
   }, [status, router]);
 
-  useEffect(() => {
-    filterTransfers();
-  }, [startDate, endDate, destinationFilter, transfers]);
-
   const fetchTransfers = async () => {
     try {
       const response = await fetch('/api/transfers');
@@ -91,7 +87,7 @@ const HistorialTransferencias: React.FC = () => {
     ]);
   };
 
-  const filterTransfers = () => {
+  const filterTransfers = useCallback(() => {
     let filtered = transfers;
 
     if (startDate || endDate) {
@@ -127,7 +123,11 @@ const HistorialTransferencias: React.FC = () => {
     }
 
     setFilteredTransfers(filtered);
-  };
+  }, [transfers, startDate, endDate, destinationFilter]);
+
+  useEffect(() => {
+    filterTransfers();
+  }, [filterTransfers]);
 
   const toggleFilters = () => {
     setShowFilters(!showFilters);
