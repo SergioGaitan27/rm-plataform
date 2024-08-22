@@ -390,7 +390,7 @@ const SalesPage: React.FC = () => {
     }
   
     try {
-      const licenseKey = process.env.NEXT_PUBLIC_CONECTOR_PLUGIN_LICENSE_KEY;
+      const licenseKey = process.env.CONECTOR_PLUGIN_LICENSE_KEY;
       if (!licenseKey) {
         throw new Error("Clave de licencia no encontrada");
       }
