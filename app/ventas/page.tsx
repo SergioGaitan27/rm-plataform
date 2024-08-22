@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import ProductCard from '@/components/ProductCard'; 
 import { toast } from 'react-hot-toast';
 import ProductInfo from '@/components/ProductInfo';
+import ConectorPluginV3 from '@/app/utils/ConectorPluginV3';
 
 interface IStockLocation {
   location: string;
@@ -104,6 +105,7 @@ const SalesPage: React.FC = () => {
   const [change, setChange] = useState(0);
   const amountPaidInputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [pluginConnected, setPluginConnected] = useState(false);
 
   useEffect(() => {
     if (status === 'authenticated' && session?.user) {
@@ -113,6 +115,11 @@ const SalesPage: React.FC = () => {
       router.push('/login');
     }
   }, [status, router, session]);
+
+  useEffect(() => {
+    // El plugin siempre estará disponible ahora que es un módulo TypeScript
+    setPluginConnected(true);
+  }, []);
 
   const fetchUserLocation = async () => {
     try {
@@ -362,6 +369,87 @@ const SalesPage: React.FC = () => {
     });
   };
 
+  const [printerConfig, setPrinterConfig] = useState<{ printerName: string; paperSize: string }>({
+    printerName: '',
+    paperSize: '80mm',
+  });
+
+  useEffect(() => {
+    // Cargar la configuración de la impresora
+    const savedConfig = localStorage.getItem('printerConfig');
+    if (savedConfig) {
+      setPrinterConfig(JSON.parse(savedConfig));
+    }
+  }, []);
+
+  // Modificar la función printTicket para usar la configuración
+  const printTicket = async () => {
+    if (!pluginConnected) {
+      toast.error('El plugin de impresión no está conectado');
+      return;
+    }
+  
+    try {
+      const licenseKey = process.env.NEXT_PUBLIC_CONECTOR_PLUGIN_LICENSE_KEY;
+      if (!licenseKey) {
+        throw new Error("Clave de licencia no encontrada");
+      }
+  
+      // Pasar la licencia en el constructor
+      const conector = new ConectorPluginV3(undefined, licenseKey);
+  
+      await conector.Iniciar();
+  
+      // Ajustar el ancho de impresión según el tamaño del papel
+      let anchoCaracteres;
+      switch (printerConfig.paperSize) {
+        case '58mm':
+          anchoCaracteres = 32;
+          break;
+        case '80mm':
+          anchoCaracteres = 48;
+          break;
+        case 'A4':
+          anchoCaracteres = 64;
+          break;
+        default:
+          anchoCaracteres = 48;
+      }
+  
+      conector.EstablecerTamañoFuente(1, 1);
+      conector.EstablecerEnfatizado(true);
+      conector.EscribirTexto("Ticket de venta\n");
+      conector.EscribirTexto("=".repeat(anchoCaracteres) + "\n");
+      conector.EstablecerEnfatizado(false);
+  
+      cart.forEach(item => {
+        const totalPieces = item.unitType === 'boxes' ? item.quantity * item.piecesPerBox : item.quantity;
+        conector.EscribirTexto(`${item.name}\n`);
+        conector.EscribirTexto(`${totalPieces} x $${item.appliedPrice.toFixed(2)} = $${(totalPieces * item.appliedPrice).toFixed(2)}\n`);
+      });
+  
+      conector.EscribirTexto("\n");
+      conector.EscribirTexto(`Total: $${calculateTotal().toFixed(2)}\n`);
+      conector.EscribirTexto(`Método de pago: ${paymentType === 'cash' ? 'Efectivo' : 'Tarjeta'}\n`);
+      if (paymentType === 'cash') {
+        conector.EscribirTexto(`Monto pagado: $${amountPaid}\n`);
+        conector.EscribirTexto(`Cambio: $${change.toFixed(2)}\n`);
+      }
+  
+      conector.Corte(3);
+      const resultado = await conector.imprimirEn(printerConfig.printerName);
+  
+      if ('error' in resultado) {
+        throw new Error(resultado.error);
+      }
+  
+      toast.success('Ticket impreso correctamente');
+    } catch (error) {
+      console.error('Error al imprimir:', error);
+      toast.error(`Error al imprimir el ticket: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+    }
+  };
+
   const handleOpenPaymentModal = () => {
     setIsPaymentModalOpen(true);
     setAmountPaid('');
@@ -453,13 +541,13 @@ const SalesPage: React.FC = () => {
         },
         body: JSON.stringify(ticketData),
       });
-
+  
       if (!response.ok) {
         throw new Error('Error al guardar el ticket');
       }
-
+  
       const data = await response.json();
-
+  
       // Actualizar los productos en el estado local
       setProducts(prevProducts => {
         const updatedProducts = [...prevProducts];
@@ -471,20 +559,23 @@ const SalesPage: React.FC = () => {
         });
         return updatedProducts;
       });
-
+  
+      // Imprimir el ticket
+      await printTicket();
+  
       // Limpiar el carrito y cerrar el modal de pago
       handleClosePaymentModal();
       setCart([]);
       
       // Mostrar mensaje de éxito
-      toast.success('Pago procesado exitosamente');
-
+      toast.success('Pago procesado e impreso exitosamente');
+  
       // Limpiar la información del producto seleccionado
       setProductInfoBottom(null);
       setSearchTermBottom('');
     } catch (error) {
-      console.error('Error al procesar el pago:', error);
-      toast.error('Error al procesar el pago');
+      console.error('Error al procesar el pago o imprimir:', error);
+      toast.error('Error al procesar el pago o imprimir el ticket');
     } finally {
       setIsLoading(false);
     }
