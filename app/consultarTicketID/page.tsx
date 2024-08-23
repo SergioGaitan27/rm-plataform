@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import React, { useState, useCallback, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -26,7 +26,34 @@ interface Ticket {
   date: string;
 }
 
+interface IBusinessInfo {
+  businessName: string;
+  address: string;
+  phone: string;
+  taxId: string;
+}
+
 const TicketQueryPage: React.FC = () => {
+  const [businessInfo, setBusinessInfo] = useState<IBusinessInfo | null>(null);
+
+  const fetchBusinessInfo = useCallback(async () => {
+    try {
+      const response = await fetch('/api/business');
+      if (!response.ok) {
+        throw new Error('Error al obtener la información del negocio');
+      }
+      const data = await response.json();
+      setBusinessInfo(data);
+    } catch (error) {
+      console.error('Error al obtener la información del negocio:', error);
+      toast.error('Error al obtener la información del negocio.');
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchBusinessInfo();
+  }, [fetchBusinessInfo]);
+
   return (
     <div className="container mx-auto p-4">
       <Card>
@@ -34,6 +61,15 @@ const TicketQueryPage: React.FC = () => {
           <CardTitle>Consulta de Ticket</CardTitle>
         </CardHeader>
         <CardContent>
+          {/* Mostrar la información del negocio */}
+          {businessInfo && (
+            <div className="mb-4 p-4 border rounded-lg bg-gray-50">
+              <h2 className="text-lg font-bold mb-2">Nombre del negocio: {businessInfo.businessName}</h2>
+              <p>Dirección: {businessInfo.address}</p>
+              <p>Tel: {businessInfo.phone}</p>
+              <p>RFC: {businessInfo.taxId}</p>
+            </div>
+          )}
           <Suspense fallback={<div>Cargando...</div>}>
             <TicketQueryContent />
           </Suspense>
@@ -102,7 +138,6 @@ const TicketQueryContent: React.FC = () => {
         <div className="mt-4">
           <h2 className="text-xl font-bold mb-2">Detalles del Ticket</h2>
           <p><strong>ID del Ticket:</strong> {ticket.ticketId}</p>
-          <p><strong>Ubicación:</strong> {ticket.location}</p>
           <p><strong>Fecha:</strong> {new Date(ticket.date).toLocaleString()}</p>
           <p><strong>Tipo de Pago:</strong> {ticket.paymentType === 'cash' ? 'Efectivo' : 'Tarjeta'}</p>
           <p><strong>Total:</strong> ${ticket.totalAmount.toFixed(2)}</p>
