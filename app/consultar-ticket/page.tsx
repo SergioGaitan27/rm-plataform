@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -27,6 +27,23 @@ interface Ticket {
 }
 
 const TicketQueryPage: React.FC = () => {
+  return (
+    <div className="container mx-auto p-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>Consulta de Ticket</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Suspense fallback={<div>Cargando...</div>}>
+            <TicketQueryContent />
+          </Suspense>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+const TicketQueryContent: React.FC = () => {
   const [ticketId, setTicketId] = useState('');
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [loading, setLoading] = useState(false);
@@ -68,51 +85,44 @@ const TicketQueryPage: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto p-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Consulta de Ticket</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex space-x-2 mb-4">
-            <Input
-              type="text"
-              value={ticketId}
-              onChange={(e) => setTicketId(e.target.value)}
-              placeholder="Ingrese el ID del ticket"
-            />
-            <Button onClick={handleSearch} disabled={loading}>
-              {loading ? 'Buscando...' : 'Buscar'}
-            </Button>
-          </div>
+    <>
+      <div className="flex space-x-2 mb-4">
+        <Input
+          type="text"
+          value={ticketId}
+          onChange={(e) => setTicketId(e.target.value)}
+          placeholder="Ingrese el ID del ticket"
+        />
+        <Button onClick={handleSearch} disabled={loading}>
+          {loading ? 'Buscando...' : 'Buscar'}
+        </Button>
+      </div>
 
-          {ticket && (
-            <div className="mt-4">
-              <h2 className="text-xl font-bold mb-2">Detalles del Ticket</h2>
-              <p><strong>ID del Ticket:</strong> {ticket.ticketId}</p>
-              <p><strong>Ubicación:</strong> {ticket.location}</p>
-              <p><strong>Fecha:</strong> {new Date(ticket.date).toLocaleString()}</p>
-              <p><strong>Tipo de Pago:</strong> {ticket.paymentType === 'cash' ? 'Efectivo' : 'Tarjeta'}</p>
-              <p><strong>Total:</strong> ${ticket.totalAmount.toFixed(2)}</p>
-              <p><strong>Monto Pagado:</strong> ${ticket.amountPaid.toFixed(2)}</p>
-              <p><strong>Cambio:</strong> ${ticket.change.toFixed(2)}</p>
+      {ticket && (
+        <div className="mt-4">
+          <h2 className="text-xl font-bold mb-2">Detalles del Ticket</h2>
+          <p><strong>ID del Ticket:</strong> {ticket.ticketId}</p>
+          <p><strong>Ubicación:</strong> {ticket.location}</p>
+          <p><strong>Fecha:</strong> {new Date(ticket.date).toLocaleString()}</p>
+          <p><strong>Tipo de Pago:</strong> {ticket.paymentType === 'cash' ? 'Efectivo' : 'Tarjeta'}</p>
+          <p><strong>Total:</strong> ${ticket.totalAmount.toFixed(2)}</p>
+          <p><strong>Monto Pagado:</strong> ${ticket.amountPaid.toFixed(2)}</p>
+          <p><strong>Cambio:</strong> ${ticket.change.toFixed(2)}</p>
 
-              <h3 className="text-lg font-semibold mt-4 mb-2">Artículos</h3>
-              <ul>
-                {ticket.items.map((item, index) => (
-                  <li key={index} className="mb-2">
-                    <p><strong>{item.productName}</strong></p>
-                    <p>Cantidad: {item.quantity} {item.unitType}</p>
-                    <p>Precio por unidad: ${item.pricePerUnit.toFixed(2)}</p>
-                    <p>Total: ${item.total.toFixed(2)}</p>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+          <h3 className="text-lg font-semibold mt-4 mb-2">Artículos</h3>
+          <ul>
+            {ticket.items.map((item, index) => (
+              <li key={index} className="mb-2">
+                <p><strong>{item.productName}</strong></p>
+                <p>Cantidad: {item.quantity} {item.unitType}</p>
+                <p>Precio por unidad: ${item.pricePerUnit.toFixed(2)}</p>
+                <p>Total: ${item.total.toFixed(2)}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </>
   );
 };
 

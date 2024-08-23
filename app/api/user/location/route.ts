@@ -1,9 +1,10 @@
-// app/api/user/location/route.ts
 import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import User from '@/models/User';
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth"; // Importamos desde lib/auth
+import { authOptions } from "@/lib/auth";
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request) {
   try {
