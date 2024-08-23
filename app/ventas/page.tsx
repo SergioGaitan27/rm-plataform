@@ -441,23 +441,26 @@ const SalesPage: React.FC = () => {
       // Imprimir información del negocio
       if (businessInfo) {
         conector.EstablecerEnfatizado(true);
-        conector.EscribirTexto(`${businessInfo.businessName}\n`);
+        conector.EstablecerAlineacion(ConectorPluginV3.ALINEACION_DERECHA);
+        conector.EstablecerTamañoFuente(1, 1);
+        conector.EscribirTexto(`${businessInfo.businessName}`);
+        conector.EscribirTexto("Ticket de venta\n");
+        conector.EstablecerAlineacion(ConectorPluginV3.ALINEACION_IZQUIERDA);
         conector.EstablecerEnfatizado(false);
-        conector.EscribirTexto(`${businessInfo.address}\n`);
+        conector.EscribirTexto(`${businessInfo.address}`);
+        conector.EstablecerAlineacion(ConectorPluginV3.ALINEACION_DERECHA);
+        conector.EstablecerEnfatizado(true);
+        conector.EstablecerTamañoFuente(1, 1);
+        if (ticketId) {
+          conector.EscribirTexto(`ID: ${ticketId}\n`);
+        }
+        conector.EstablecerAlineacion(ConectorPluginV3.ALINEACION_IZQUIERDA);
+        conector.EstablecerEnfatizado(false);
         conector.EscribirTexto(`Tel: ${businessInfo.phone}\n`);
         conector.EscribirTexto(`RFC: ${businessInfo.taxId}\n`);
         conector.EscribirTexto("=".repeat(anchoCaracteres) + "\n");
       }
-  
-      conector.EstablecerTamañoFuente(1, 1);
-      conector.EstablecerEnfatizado(true);
-      conector.EscribirTexto("Ticket de venta\n");
-      if (ticketId) {
-        conector.EscribirTexto(`ID: ${ticketId}\n`);
-      }
-      conector.EscribirTexto("=".repeat(anchoCaracteres) + "\n");
-      conector.EstablecerEnfatizado(false);
-    
+
         // Añadir fecha y hora
         conector.EscribirTexto(`Fecha: ${new Date().toLocaleString()}\n`);
         conector.EscribirTexto("=".repeat(anchoCaracteres) + "\n");
