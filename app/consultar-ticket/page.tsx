@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { useRouter } from 'next/router';
+import { useSearchParams } from 'next/navigation';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -30,7 +30,7 @@ const TicketQueryPage: React.FC = () => {
   const [ticketId, setTicketId] = useState('');
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
+  const searchParams = useSearchParams();
 
   const fetchTicket = useCallback(async (id: string) => {
     if (!id) {
@@ -56,12 +56,12 @@ const TicketQueryPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const id = router.query.id as string;
+    const id = searchParams.get('id');
     if (id) {
       setTicketId(id);
       fetchTicket(id);
     }
-  }, [router.query.id, fetchTicket]);
+  }, [searchParams, fetchTicket]);
 
   const handleSearch = () => {
     fetchTicket(ticketId);
