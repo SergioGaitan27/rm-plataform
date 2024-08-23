@@ -1,4 +1,3 @@
-// app/models/Ticket.ts
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface ITicketItem extends Document {
@@ -11,6 +10,9 @@ export interface ITicketItem extends Document {
 }
 
 export interface ITicket extends Document {
+  ticketId: string;
+  location: string;
+  sequenceNumber: number;
   items: ITicketItem[];
   totalAmount: number;
   paymentType: 'cash' | 'card';
@@ -29,6 +31,9 @@ const TicketItemSchema: Schema = new Schema({
 });
 
 const TicketSchema: Schema = new Schema({
+  ticketId: { type: String, required: true, unique: true },
+  location: { type: String, required: true },
+  sequenceNumber: { type: Number, required: true },
   items: [TicketItemSchema],
   totalAmount: { type: Number, required: true },
   paymentType: { type: String, enum: ['cash', 'card'], required: true },
@@ -36,5 +41,8 @@ const TicketSchema: Schema = new Schema({
   change: { type: Number, required: true },
   date: { type: Date, default: Date.now }
 });
+
+// Índice compuesto para garantizar la unicidad de location + sequenceNumber
+TicketSchema.index({ location: 1, sequenceNumber: 1 }, { unique: true });
 
 export default mongoose.models.Ticket || mongoose.model<ITicket>('Ticket', TicketSchema);

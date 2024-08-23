@@ -435,7 +435,7 @@ const SalesPage: React.FC = () => {
         conector.EscribirTexto(`Cambio: $${change.toFixed(2)}\n`);
       }
   
-      conector.Corte(3);
+      conector.Corte(1);
       
       const resultado = await conector.imprimirEn(printerConfig.printerName);
 
@@ -524,35 +524,37 @@ const SalesPage: React.FC = () => {
 
   const handlePayment = async () => {
     setIsLoading(true);
-    const ticketData = {
-      items: cart.map(item => ({
-        productId: item._id,
-        productName: item.name,
-        quantity: item.quantity,
-        unitType: item.unitType,
-        pricePerUnit: item.appliedPrice,
-        total: item.appliedPrice * item.quantity * (item.unitType === 'boxes' ? item.piecesPerBox : 1)
-      })),
-      totalAmount: calculateTotal(),
-      paymentType,
-      amountPaid: parseFloat(amountPaid),
-      change
-    };
 
-    try {
-      const response = await fetch('/api/tickets', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(ticketData),
-      });
-  
-      if (!response.ok) {
-        throw new Error('Error al guardar el ticket');
-      }
-  
-      const data = await response.json();
+    const ticketData = {
+    items: cart.map(item => ({
+      productId: item._id,
+      productName: item.name,
+      quantity: item.quantity,
+      unitType: item.unitType,
+      pricePerUnit: item.appliedPrice,
+      total: item.appliedPrice * item.quantity * (item.unitType === 'boxes' ? item.piecesPerBox : 1)
+    })),
+    totalAmount: calculateTotal(),
+    paymentType,
+    amountPaid: parseFloat(amountPaid),
+    change,
+    location: userLocation // Asegúrate de que userLocation esté definido y sea correcto
+  };
+
+  try {
+    const response = await fetch('/api/tickets', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(ticketData),
+    });
+
+    if (!response.ok) {
+      throw new Error('Error al guardar el ticket');
+    }
+
+    const data = await response.json();
   
       // Actualizar los productos en el estado local
       setProducts(prevProducts => {
