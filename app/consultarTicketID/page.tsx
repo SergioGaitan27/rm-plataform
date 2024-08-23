@@ -117,9 +117,16 @@ const TicketQueryContent: React.FC = () => {
 
       {ticket && (
         <div className="mt-4">
-          <h2 className="text-xl font-bold mb-2">Detalles del Ticket</h2>
+          <h2 className="text-xl font-bold mb-2">Detalles:</h2>
           <p><strong>ID del Ticket:</strong> {ticket.ticketId}</p>
-          <p><strong>Ubicación:</strong> {ticket.location}</p>
+          {businessInfo && (
+            <div>
+              <p><strong>Nombre del negocio:</strong> {businessInfo.businessName}</p>
+              <p><strong>Dirección:</strong> {businessInfo.address}</p>
+              <p><strong>Teléfono:</strong> {businessInfo.phone}</p>
+              <p><strong>RFC:</strong> {businessInfo.taxId}</p>
+            </div>
+          )}
           <p><strong>Fecha:</strong> {new Date(ticket.date).toLocaleString()}</p>
           <p><strong>Tipo de Pago:</strong> {ticket.paymentType === 'cash' ? 'Efectivo' : 'Tarjeta'}</p>
           <p><strong>Total:</strong> ${ticket.totalAmount.toFixed(2)}</p>
@@ -137,17 +144,6 @@ const TicketQueryContent: React.FC = () => {
               </li>
             ))}
           </ul>
-        </div>
-      )}
-
-      {/* Información del negocio relacionada */}
-      {businessInfo && (
-        <div className="mt-8 p-4 border rounded-lg bg-gray-50">
-          <h2 className="text-lg font-bold mb-2">Información del Negocio</h2>
-          <p><strong>Nombre:</strong> {businessInfo.businessName}</p>
-          <p><strong>Dirección:</strong> {businessInfo.address}</p>
-          <p><strong>Teléfono:</strong> {businessInfo.phone}</p>
-          <p><strong>RFC:</strong> {businessInfo.taxId}</p>
         </div>
       )}
     </>
