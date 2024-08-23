@@ -1,13 +1,15 @@
 "use client";
+
 import { FormEvent, useState } from "react";
-import { signIn } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Image from 'next/image';
+import Image from "next/image";
 
 export default function Login() {
     const [error, setError] = useState("");
     const [rememberMe, setRememberMe] = useState(false);
+    const { data: session } = useSession();
     const router = useRouter();
 
     const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -22,13 +24,18 @@ export default function Login() {
                 redirect: false,
                 callbackUrl: "/dashboard",
             });
-    
+
             if (res?.error === "InvalidCredentials") {
                 setError("Credenciales inválidas. Por favor, intenta de nuevo.");
             } else if (res?.error) {
                 setError(`Error en el inicio de sesión: ${res.error}`);
             } else if (res?.ok) {
-                router.push("/dashboard");
+                // Verificar la sesión para obtener el rol del usuario
+                if (session?.user?.role === "vendedor") {
+                    router.push("/ventas");
+                } else {
+                    router.push("/dashboard");
+                }
             }
         } catch (error) {
             console.error("Error durante el inicio de sesión:", error);

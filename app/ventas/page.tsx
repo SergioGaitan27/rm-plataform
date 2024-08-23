@@ -114,6 +114,9 @@ const SalesPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [pluginConnected, setPluginConnected] = useState(false);
   const [businessInfo, setBusinessInfo] = useState<IBusinessInfo | null>(null);
+  const [isCorteModalOpen, setIsCorteModalOpen] = useState(false);
+  const [cashAmountCorte, setCashAmountCorte] = useState('');
+  const [cardAmountCorte, setCardAmountCorte] = useState('');
 
   const fetchBusinessInfo = useCallback(async () => {
     if (!userLocation) return;
@@ -181,6 +184,11 @@ const SalesPage: React.FC = () => {
   };
 
   const handleSearchTop = () => {
+    if (searchTermTop.trim().toUpperCase() === 'CORTE') {
+      setIsCorteModalOpen(true);
+      setSearchTermTop('');
+      return;
+    }
     const result = products.find(product => 
       product.boxCode.toLowerCase() === searchTermTop.toLowerCase() ||
       product.productCode.toLowerCase() === searchTermTop.toLowerCase() ||
@@ -819,6 +827,51 @@ const SalesPage: React.FC = () => {
               disabled={paymentType === 'cash' && change < 0 || isLoading}
             >
               {isLoading ? 'Procesando...' : 'Confirmar Pago'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Modal de Corte */}
+      <Dialog open={isCorteModalOpen} onOpenChange={setIsCorteModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Realizar Corte</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="cashAmountCorte">Monto en Efectivo:</Label>
+              <Input
+                id="cashAmountCorte"
+                type="number"
+                value={cashAmountCorte}
+                onChange={(e) => setCashAmountCorte(e.target.value)}
+                placeholder="Ingrese el monto en efectivo"
+                className="mt-2 mb-4"
+              />
+            </div>
+            <div>
+              <Label htmlFor="cardAmountCorte">Monto en Tarjeta:</Label>
+              <Input
+                id="cardAmountCorte"
+                type="number"
+                value={cardAmountCorte}
+                onChange={(e) => setCardAmountCorte(e.target.value)}
+                placeholder="Ingrese el monto en tarjeta"
+                className="mt-2 mb-4"
+              />
+            </div>
+            <p className="font-bold">Total: ${(+cashAmountCorte + +cardAmountCorte).toFixed(2)}</p>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setIsCorteModalOpen(false)} variant="outline">Cancelar</Button>
+            <Button
+              onClick={() => {
+                // Aquí puedes manejar la lógica adicional para el corte
+                setIsCorteModalOpen(false);
+                toast.success('Corte realizado exitosamente');
+              }}
+            >
+              Confirmar Corte
             </Button>
           </DialogFooter>
         </DialogContent>
