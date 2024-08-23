@@ -1,4 +1,4 @@
-// app/api/business-info/route.ts
+// app/api/business/route.ts
 
 import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
@@ -45,6 +45,7 @@ export async function POST(req: Request) {
 }
 
 export async function PUT(req: Request) {
+  console.log('PUT request received');
   try {
     await connectDB();
     const data = await req.json();

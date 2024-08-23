@@ -28,7 +28,7 @@ const BusinessInfoPage: React.FC = () => {
 
   const fetchBusinesses = async () => {
     try {
-      const response = await fetch('/api/business-info');
+      const response = await fetch('/api/business');
       if (response.ok) {
         const data = await response.json();
         setBusinesses(data);
@@ -60,7 +60,7 @@ const BusinessInfoPage: React.FC = () => {
     if (!selectedBusiness) return;
 
     try {
-      const response = await fetch('/api/business-info', {
+      const response = await fetch('/api/business', {
         method: isEditing ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(selectedBusiness),
@@ -84,7 +84,7 @@ const BusinessInfoPage: React.FC = () => {
 
     if (window.confirm('¿Está seguro de que desea eliminar este negocio?')) {
       try {
-        const response = await fetch(`/api/business-info?location=${encodeURIComponent(selectedBusiness.location)}`, {
+        const response = await fetch(`/api/business?location=${encodeURIComponent(selectedBusiness.location)}`, {
           method: 'DELETE',
         });
 
