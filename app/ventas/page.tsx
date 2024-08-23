@@ -475,17 +475,10 @@ const SalesPage: React.FC = () => {
         conector.EscribirTexto(`Monto pagado: $${amountPaid}\n`);
         conector.EscribirTexto(`Cambio: $${change.toFixed(2)}\n`);
       }
-  
-     // Modificar la generación del código QR con un factor de escala ajustable
-    const qrUrl = `https://www.rmazh.com.mx/consultarTicketID?id=${ticketId}`;
-    const qrScaleFactor = 6; // Puedes ajustar este valor para hacer el QR más grande o más pequeño
-    const qrSize = anchoCaracteres * qrScaleFactor;
-    
-    // Centrar el código QR
-    const leftMargin = Math.floor((anchoCaracteres * 8 - qrSize) / 2);
-    conector.EscribirTexto("\n" + " ".repeat(leftMargin));
-    
-    conector.ImprimirCodigoQr(qrUrl, qrSize, ConectorPluginV3.RECUPERACION_QR_MEJOR, ConectorPluginV3.TAMAÑO_IMAGEN_NORMAL);
+
+      conector.EstablecerAlineacion(ConectorPluginV3.ALINEACION_CENTRO);
+      const qrUrl = `https://www.rmazh.com.mx/consultarTicketID?id=${ticketId}`;
+      conector.ImprimirCodigoQr(qrUrl, anchoCaracteres * 8, ConectorPluginV3.RECUPERACION_QR_MEJOR, ConectorPluginV3.TAMAÑO_IMAGEN_NORMAL);
     
     // Centrar el texto debajo del QR
     conector.EstablecerAlineacion(ConectorPluginV3.ALINEACION_CENTRO);
