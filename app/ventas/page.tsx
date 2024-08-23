@@ -443,9 +443,9 @@ const SalesPage: React.FC = () => {
         conector.EstablecerEnfatizado(true);
         conector.EstablecerTamañoFuente(1, 1);
         conector.EstablecerAlineacion(ConectorPluginV3.ALINEACION_IZQUIERDA);
-        conector.EscribirTexto(`${businessInfo.businessName}`);
+        conector.EscribirTexto(`${businessInfo.businessName}\n`);
         conector.EstablecerEnfatizado(false);
-        conector.EscribirTexto(`${businessInfo.address}`);
+        conector.EscribirTexto(`${businessInfo.address}\n`);
         conector.EscribirTexto(`Tel: ${businessInfo.phone}\n`);
         conector.EscribirTexto(`RFC: ${businessInfo.taxId}\n`);
         conector.EscribirTexto("=".repeat(anchoCaracteres) + "\n");
@@ -456,12 +456,12 @@ const SalesPage: React.FC = () => {
         conector.EstablecerEnfatizado(true);
         conector.EstablecerTamañoFuente(1, 1);
         conector.EscribirTexto(`Fecha: ${new Date().toLocaleString()}\n`);
-        conector.EscribirTexto("=".repeat(anchoCaracteres) + "\n");
         if (ticketId) {
           conector.EscribirTexto(`ID: ${ticketId}\n`);
         }
         conector.EstablecerEnfatizado(false);
-    
+        
+        conector.EscribirTexto("=".repeat(anchoCaracteres) + "\n");
         cart.forEach(item => {
           const totalPieces = item.unitType === 'boxes' ? item.quantity * item.piecesPerBox : item.quantity;
           conector.EscribirTexto(`${item.name}\n`);
