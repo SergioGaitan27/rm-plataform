@@ -493,7 +493,7 @@ const SalesPage: React.FC = () => {
     conector.EscribirTexto("\nEscanea el código QR para más detalles\n");
     conector.EstablecerAlineacion(ConectorPluginV3.ALINEACION_IZQUIERDA);
 
-    conector.Corte(0);
+    conector.Corte(1);
       
       const resultado = await conector.imprimirEn(printerConfig.printerName);
 
