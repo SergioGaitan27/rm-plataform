@@ -15,6 +15,13 @@ import { toast } from 'react-hot-toast';
 import ProductInfo from '@/components/ProductInfo';
 import ConectorPluginV3 from '@/app/utils/ConectorPluginV3';
 
+interface IBusinessInfo {
+  businessName: string;
+  address: string;
+  phone: string;
+  taxId: string;
+}
+
 interface IStockLocation {
   location: string;
   quantity: number;
@@ -106,6 +113,27 @@ const SalesPage: React.FC = () => {
   const amountPaidInputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [pluginConnected, setPluginConnected] = useState(false);
+  const [businessInfo, setBusinessInfo] = useState<IBusinessInfo | null>(null);
+
+  useEffect(() => {
+    const fetchBusinessInfo = async () => {
+      if (userLocation) {
+        try {
+          const response = await fetch(`/api/business-info?location=${encodeURIComponent(userLocation)}`);
+          if (response.ok) {
+            const data = await response.json();
+            setBusinessInfo(data);
+          } else {
+            console.error('Error al obtener la información del negocio');
+          }
+        } catch (error) {
+          console.error('Error al obtener la información del negocio:', error);
+        }
+      }
+    };
+
+    fetchBusinessInfo();
+  }, [userLocation]);
 
   useEffect(() => {
     if (status === 'authenticated' && session?.user) {
@@ -410,6 +438,16 @@ const SalesPage: React.FC = () => {
           anchoCaracteres = 48; // valor por defecto
           console.warn(`Tamaño de papel desconocido: ${printerConfig.paperSize}. Usando ancho por defecto.`);
       }
+
+      if (businessInfo) {
+        conector.EstablecerEnfatizado(true);
+        conector.EscribirTexto(`${businessInfo.businessName}\n`);
+        conector.EstablecerEnfatizado(false);
+        conector.EscribirTexto(`${businessInfo.address}\n`);
+        conector.EscribirTexto(`Tel: ${businessInfo.phone}\n`);
+        conector.EscribirTexto(`RFC: ${businessInfo.taxId}\n`);
+        conector.EscribirTexto("=".repeat(anchoCaracteres) + "\n");
+      }
   
       conector.EstablecerTamañoFuente(1, 1);
       conector.EstablecerEnfatizado(true);
@@ -573,9 +611,6 @@ const SalesPage: React.FC = () => {
 
     // Imprimir el ticket con el ticketId si está disponible
     await printTicket(data.ticket?.ticketId);
-  
-      // Imprimir el ticket
-      await printTicket();
   
       // Limpiar el carrito y cerrar el modal de pago
       handleClosePaymentModal();
