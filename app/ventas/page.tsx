@@ -383,7 +383,7 @@ const SalesPage: React.FC = () => {
   }, []);
 
   // Modificar la función printTicket para usar la configuración
-  const printTicket = async () => {
+  const printTicket = async (ticketId?: string) => {
     if (!pluginConnected) {
       toast.error('El plugin de impresión no está conectado');
       return;
@@ -414,19 +414,22 @@ const SalesPage: React.FC = () => {
       conector.EstablecerTamañoFuente(1, 1);
       conector.EstablecerEnfatizado(true);
       conector.EscribirTexto("Ticket de venta\n");
+      if (ticketId) {
+        conector.EscribirTexto(`ID: ${ticketId}\n`);
+      }
       conector.EscribirTexto("=".repeat(anchoCaracteres) + "\n");
       conector.EstablecerEnfatizado(false);
-  
-      // Añadir fecha y hora
-      conector.EscribirTexto(`Fecha: ${new Date().toLocaleString()}\n`);
-      conector.EscribirTexto("=".repeat(anchoCaracteres) + "\n");
-  
-      cart.forEach(item => {
-        const totalPieces = item.unitType === 'boxes' ? item.quantity * item.piecesPerBox : item.quantity;
-        conector.EscribirTexto(`${item.name}\n`);
-        conector.EscribirTexto(`${totalPieces} x $${item.appliedPrice.toFixed(2)} = $${(totalPieces * item.appliedPrice).toFixed(2)}\n`);
-      });
-  
+    
+        // Añadir fecha y hora
+        conector.EscribirTexto(`Fecha: ${new Date().toLocaleString()}\n`);
+        conector.EscribirTexto("=".repeat(anchoCaracteres) + "\n");
+    
+        cart.forEach(item => {
+          const totalPieces = item.unitType === 'boxes' ? item.quantity * item.piecesPerBox : item.quantity;
+          conector.EscribirTexto(`${item.name}\n`);
+          conector.EscribirTexto(`${totalPieces} x $${item.appliedPrice.toFixed(2)} = $${(totalPieces * item.appliedPrice).toFixed(2)}\n`);
+        });
+    
       conector.EscribirTexto("\n");
       conector.EscribirTexto(`Total: $${calculateTotal().toFixed(2)}\n`);
       conector.EscribirTexto(`Método de pago: ${paymentType === 'cash' ? 'Efectivo' : 'Tarjeta'}\n`);
@@ -555,18 +558,21 @@ const SalesPage: React.FC = () => {
     }
 
     const data = await response.json();
-  
-      // Actualizar los productos en el estado local
-      setProducts(prevProducts => {
-        const updatedProducts = [...prevProducts];
-        data.updatedProducts.forEach((updatedProduct: Product) => {
-          const index = updatedProducts.findIndex(p => p._id === updatedProduct._id);
-          if (index !== -1) {
-            updatedProducts[index] = updatedProduct;
-          }
-        });
-        return updatedProducts;
+    
+    // Actualizar los productos en el estado local
+    setProducts(prevProducts => {
+      const updatedProducts = [...prevProducts];
+      data.updatedProducts.forEach((updatedProduct: Product) => {
+        const index = updatedProducts.findIndex(p => p._id === updatedProduct._id);
+        if (index !== -1) {
+          updatedProducts[index] = updatedProduct;
+        }
       });
+      return updatedProducts;
+    });
+
+    // Imprimir el ticket con el ticketId si está disponible
+    await printTicket(data.ticket?.ticketId);
   
       // Imprimir el ticket
       await printTicket();
