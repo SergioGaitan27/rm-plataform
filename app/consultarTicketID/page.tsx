@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 import React, { useState, useCallback, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -34,26 +34,6 @@ interface IBusinessInfo {
 }
 
 const TicketQueryPage: React.FC = () => {
-  const [businessInfo, setBusinessInfo] = useState<IBusinessInfo | null>(null);
-
-  const fetchBusinessInfo = useCallback(async () => {
-    try {
-      const response = await fetch('/api/business');
-      if (!response.ok) {
-        throw new Error('Error al obtener la información del negocio');
-      }
-      const data = await response.json();
-      setBusinessInfo(data);
-    } catch (error) {
-      console.error('Error al obtener la información del negocio:', error);
-      toast.error('Error al obtener la información del negocio.');
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchBusinessInfo();
-  }, [fetchBusinessInfo]);
-
   return (
     <div className="container mx-auto p-4">
       <Card>
@@ -61,15 +41,6 @@ const TicketQueryPage: React.FC = () => {
           <CardTitle>Consulta de Ticket</CardTitle>
         </CardHeader>
         <CardContent>
-          {/* Mostrar la información del negocio */}
-          {businessInfo && (
-            <div className="mb-4 p-4 border rounded-lg bg-gray-50">
-              <h2 className="text-lg font-bold mb-2">Nombre del negocio: {businessInfo.businessName}</h2>
-              <p>Dirección: {businessInfo.address}</p>
-              <p>Tel: {businessInfo.phone}</p>
-              <p>RFC: {businessInfo.taxId}</p>
-            </div>
-          )}
           <Suspense fallback={<div>Cargando...</div>}>
             <TicketQueryContent />
           </Suspense>
@@ -82,6 +53,7 @@ const TicketQueryPage: React.FC = () => {
 const TicketQueryContent: React.FC = () => {
   const [ticketId, setTicketId] = useState('');
   const [ticket, setTicket] = useState<Ticket | null>(null);
+  const [businessInfo, setBusinessInfo] = useState<IBusinessInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const searchParams = useSearchParams();
 
@@ -99,10 +71,19 @@ const TicketQueryContent: React.FC = () => {
       }
       const data = await response.json();
       setTicket(data);
+
+      // Ahora obtener la información del negocio con la ubicación del ticket
+      const businessResponse = await fetch(`/api/business?location=${encodeURIComponent(data.location)}`);
+      if (!businessResponse.ok) {
+        throw new Error('Información de negocio no encontrada');
+      }
+      const businessData = await businessResponse.json();
+      setBusinessInfo(businessData);
     } catch (error) {
-      console.error('Error al obtener el ticket:', error);
-      toast.error('Error al obtener el ticket. Por favor, intente de nuevo.');
+      console.error('Error al obtener el ticket o la información del negocio:', error);
+      toast.error('Error al obtener la información. Por favor, intente de nuevo.');
       setTicket(null);
+      setBusinessInfo(null);
     } finally {
       setLoading(false);
     }
@@ -138,6 +119,7 @@ const TicketQueryContent: React.FC = () => {
         <div className="mt-4">
           <h2 className="text-xl font-bold mb-2">Detalles del Ticket</h2>
           <p><strong>ID del Ticket:</strong> {ticket.ticketId}</p>
+          <p><strong>Ubicación:</strong> {ticket.location}</p>
           <p><strong>Fecha:</strong> {new Date(ticket.date).toLocaleString()}</p>
           <p><strong>Tipo de Pago:</strong> {ticket.paymentType === 'cash' ? 'Efectivo' : 'Tarjeta'}</p>
           <p><strong>Total:</strong> ${ticket.totalAmount.toFixed(2)}</p>
@@ -155,6 +137,17 @@ const TicketQueryContent: React.FC = () => {
               </li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {/* Información del negocio relacionada */}
+      {businessInfo && (
+        <div className="mt-8 p-4 border rounded-lg bg-gray-50">
+          <h2 className="text-lg font-bold mb-2">Información del Negocio</h2>
+          <p><strong>Nombre:</strong> {businessInfo.businessName}</p>
+          <p><strong>Dirección:</strong> {businessInfo.address}</p>
+          <p><strong>Teléfono:</strong> {businessInfo.phone}</p>
+          <p><strong>RFC:</strong> {businessInfo.taxId}</p>
         </div>
       )}
     </>
