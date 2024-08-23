@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -115,24 +115,19 @@ const SalesPage: React.FC = () => {
   const [pluginConnected, setPluginConnected] = useState(false);
   const [businessInfo, setBusinessInfo] = useState<IBusinessInfo | null>(null);
 
-  useEffect(() => {
-    const fetchBusinessInfo = async () => {
-      if (userLocation) {
-        try {
-          const response = await fetch(`/api/business-info?location=${encodeURIComponent(userLocation)}`);
-          if (response.ok) {
-            const data = await response.json();
-            setBusinessInfo(data);
-          } else {
-            console.error('Error al obtener la información del negocio');
-          }
-        } catch (error) {
-          console.error('Error al obtener la información del negocio:', error);
-        }
+  const fetchBusinessInfo = useCallback(async () => {
+    if (!userLocation) return;
+    
+    try {
+      const response = await fetch(`/api/business?location=${encodeURIComponent(userLocation)}`);
+      if (!response.ok) {
+        throw new Error('Error al obtener la información del negocio');
       }
-    };
-
-    fetchBusinessInfo();
+      const data = await response.json();
+      setBusinessInfo(data);
+    } catch (error) {
+      console.error('Error al obtener la información del negocio:', error);
+    }
   }, [userLocation]);
 
   useEffect(() => {
@@ -143,6 +138,10 @@ const SalesPage: React.FC = () => {
       router.push('/login');
     }
   }, [status, router, session]);
+
+  useEffect(() => {
+    fetchBusinessInfo();
+  }, [fetchBusinessInfo]);
 
   useEffect(() => {
     // El plugin siempre estará disponible ahora que es un módulo TypeScript
@@ -439,6 +438,7 @@ const SalesPage: React.FC = () => {
           console.warn(`Tamaño de papel desconocido: ${printerConfig.paperSize}. Usando ancho por defecto.`);
       }
 
+      // Imprimir información del negocio
       if (businessInfo) {
         conector.EstablecerEnfatizado(true);
         conector.EscribirTexto(`${businessInfo.businessName}\n`);
@@ -476,13 +476,15 @@ const SalesPage: React.FC = () => {
         conector.EscribirTexto(`Cambio: $${change.toFixed(2)}\n`);
       }
   
-      // Añadir espacios en blanco para centrar el QR
-    const espaciosEnBlanco = Math.floor(anchoCaracteres * 0.125); // 12.5% del ancho a cada lado
-    conector.EscribirTexto("\n" + " ".repeat(espaciosEnBlanco));
-
-    // Añadir el código QR al final del ticket
+     // Modificar la generación del código QR con un factor de escala ajustable
     const qrUrl = `https://www.rmazh.com.mx/consultarTicketID?id=${ticketId}`;
-    const qrSize = Math.floor(anchoCaracteres * 6 * 0.75); // 75% del tamaño original
+    const qrScaleFactor = 6; // Puedes ajustar este valor para hacer el QR más grande o más pequeño
+    const qrSize = anchoCaracteres * qrScaleFactor;
+    
+    // Centrar el código QR
+    const leftMargin = Math.floor((anchoCaracteres * 8 - qrSize) / 2);
+    conector.EscribirTexto("\n" + " ".repeat(leftMargin));
+    
     conector.ImprimirCodigoQr(qrUrl, qrSize, ConectorPluginV3.RECUPERACION_QR_MEJOR, ConectorPluginV3.TAMAÑO_IMAGEN_NORMAL);
     
     // Centrar el texto debajo del QR
