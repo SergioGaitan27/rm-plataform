@@ -468,26 +468,26 @@ const SalesPage: React.FC = () => {
           conector.EscribirTexto(`ID: ${ticketId}\n`);
         }
         conector.EstablecerEnfatizado(false);
-        
         conector.EscribirTexto("=".repeat(anchoCaracteres) + "\n");
+        // Modificación: Mostrar solo piezas totales para cada producto
         cart.forEach(item => {
           const totalPieces = item.unitType === 'boxes' ? item.quantity * item.piecesPerBox : item.quantity;
           conector.EscribirTexto(`${item.name}\n`);
-          conector.EscribirTexto(`${totalPieces} x $${item.appliedPrice.toFixed(2)} = $${(totalPieces * item.appliedPrice).toFixed(2)}\n`);
+          conector.EscribirTexto(`${totalPieces} pzs x $${item.appliedPrice.toFixed(2)} = $${(totalPieces * item.appliedPrice).toFixed(2)}\n`);
         });
     
-      conector.EscribirTexto("\n");
-      conector.EscribirTexto(`Total: $${calculateTotal().toFixed(2)}\n`);
-      conector.EscribirTexto(`Método de pago: ${paymentType === 'cash' ? 'Efectivo' : 'Tarjeta'}\n`);
-      if (paymentType === 'cash') {
-        conector.EscribirTexto(`Monto pagado: $${amountPaid}\n`);
-        conector.EscribirTexto(`Cambio: $${change.toFixed(2)}\n`);
-      }
+        conector.EscribirTexto("\n");
+        conector.EscribirTexto(`Total: $${calculateTotal().toFixed(2)}\n`);
+        conector.EscribirTexto(`Método de pago: ${paymentType === 'cash' ? 'Efectivo' : 'Tarjeta'}\n`);
+        if (paymentType === 'cash') {
+          conector.EscribirTexto(`Monto pagado: $${amountPaid}\n`);
+          conector.EscribirTexto(`Cambio: $${change.toFixed(2)}\n`);
+        }
 
-      conector.EstablecerAlineacion(ConectorPluginV3.ALINEACION_CENTRO);
-      const qrUrl = `https://www.rmazh.com.mx/consultarTicketID?id=${ticketId}`;
-      conector.ImprimirCodigoQr(qrUrl, anchoCaracteres * 8, ConectorPluginV3.RECUPERACION_QR_MEJOR, ConectorPluginV3.TAMAÑO_IMAGEN_NORMAL);
-    
+        conector.EstablecerAlineacion(ConectorPluginV3.ALINEACION_CENTRO);
+        const qrUrl = `https://www.rmazh.com.mx/consultarTicketID?id=${ticketId}`;
+        conector.ImprimirCodigoQr(qrUrl, anchoCaracteres * 8, ConectorPluginV3.RECUPERACION_QR_MEJOR, ConectorPluginV3.TAMAÑO_IMAGEN_NORMAL);
+        
     // Centrar el texto debajo del QR
     conector.EstablecerAlineacion(ConectorPluginV3.ALINEACION_CENTRO);
     conector.EscribirTexto("\nEscanea el código QR para más detalles\n");
