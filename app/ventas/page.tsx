@@ -441,9 +441,10 @@ const SalesPage: React.FC = () => {
       // Imprimir información del negocio
       if (businessInfo) {
         conector.EstablecerEnfatizado(true);
-        conector.EstablecerAlineacion(ConectorPluginV3.ALINEACION_DERECHA);
+        conector.EstablecerAlineacion(ConectorPluginV3.ALINEACION_IZQUIERDA);
         conector.EstablecerTamañoFuente(1, 1);
         conector.EscribirTexto(`${businessInfo.businessName}`);
+        conector.EstablecerAlineacion(ConectorPluginV3.ALINEACION_DERECHA);
         conector.EscribirTexto("Ticket de venta\n");
         conector.EstablecerAlineacion(ConectorPluginV3.ALINEACION_IZQUIERDA);
         conector.EstablecerEnfatizado(false);
