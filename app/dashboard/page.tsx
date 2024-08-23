@@ -22,6 +22,12 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Redirigir a la página de ventas si el rol del usuario es "vendedor"
+    if (status === 'authenticated' && session?.user?.role === 'vendedor') {
+      router.push('/ventas');
+      return;
+    }
+
     const fetchCategories = async () => {
       await new Promise(resolve => setTimeout(resolve, 1000));
       setCategories([
@@ -29,13 +35,12 @@ const Dashboard = () => {
         { name: 'Créditos', allowedRoles: ['super_administrador', 'administrador'], icon: '💳' },
         { name: 'Catálogo', allowedRoles: ['super_administrador', 'administrador', 'vendedor'], icon: '📚' },
         { name: 'Administración', allowedRoles: ['super_administrador', 'administrador'], icon: '⚙️' },
-        // { name: 'Configuración', allowedRoles: ['super_administrador', 'administrador'], icon: '🔧' },
       ]);
       setLoading(false);
     };
 
     fetchCategories();
-  }, []);
+  }, [status, session, router]);
 
   if (status === 'loading' || loading) {
     return <LoadingSpinner />;
