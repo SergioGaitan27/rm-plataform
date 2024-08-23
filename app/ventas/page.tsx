@@ -476,12 +476,21 @@ const SalesPage: React.FC = () => {
         conector.EscribirTexto(`Cambio: $${change.toFixed(2)}\n`);
       }
   
-      const qrUrl = `https://www.rmazh.com.mx/consultarTicketID?id=${ticketId}`;
-      conector.ImprimirCodigoQr(qrUrl, anchoCaracteres * 8, ConectorPluginV3.RECUPERACION_QR_MEJOR, ConectorPluginV3.TAMAÑO_IMAGEN_NORMAL);
-      
-      conector.EscribirTexto("\nEscanea el código QR para más detalles\n");
+      // Añadir espacios en blanco para centrar el QR
+    const espaciosEnBlanco = Math.floor(anchoCaracteres * 0.125); // 12.5% del ancho a cada lado
+    conector.EscribirTexto("\n" + " ".repeat(espaciosEnBlanco));
 
-      conector.Corte(1);
+    // Añadir el código QR al final del ticket
+    const qrUrl = `https://www.rmazh.com.mx/consultarTicketID?id=${ticketId}`;
+    const qrSize = Math.floor(anchoCaracteres * 6 * 0.75); // 75% del tamaño original
+    conector.ImprimirCodigoQr(qrUrl, qrSize, ConectorPluginV3.RECUPERACION_QR_MEJOR, ConectorPluginV3.TAMAÑO_IMAGEN_NORMAL);
+    
+    // Centrar el texto debajo del QR
+    conector.EstablecerAlineacion(ConectorPluginV3.ALINEACION_CENTRO);
+    conector.EscribirTexto("\nEscanea el código QR para más detalles\n");
+    conector.EstablecerAlineacion(ConectorPluginV3.ALINEACION_IZQUIERDA);
+
+    conector.Corte(1);
       
       const resultado = await conector.imprimirEn(printerConfig.printerName);
 
