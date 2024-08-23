@@ -476,6 +476,11 @@ const SalesPage: React.FC = () => {
         conector.EscribirTexto(`Cambio: $${change.toFixed(2)}\n`);
       }
   
+      const qrUrl = `https://www.rmazh.com.mx/consultarTicketID?id=${ticketId}`;
+      conector.ImprimirCodigoQr(qrUrl, anchoCaracteres * 8, ConectorPluginV3.RECUPERACION_QR_MEJOR, ConectorPluginV3.TAMAÑO_IMAGEN_NORMAL);
+      
+      conector.EscribirTexto("\nEscanea el código QR para más detalles\n");
+
       conector.Corte(1);
       
       const resultado = await conector.imprimirEn(printerConfig.printerName);
