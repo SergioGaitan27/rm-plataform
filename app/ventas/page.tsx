@@ -438,9 +438,11 @@ const SalesPage: React.FC = () => {
       conector.Corte(3);
       
       const resultado = await conector.imprimirEn(printerConfig.printerName);
-  
-      if ('error' in resultado) {
+
+      if (typeof resultado === 'object' && resultado !== null && 'error' in resultado) {
         throw new Error(resultado.error);
+      } else if (resultado !== true) {
+        throw new Error('La impresión no se completó correctamente');
       }
   
       toast.success('Ticket impreso correctamente');
