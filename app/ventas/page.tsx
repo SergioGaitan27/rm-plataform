@@ -407,7 +407,8 @@ const SalesPage: React.FC = () => {
           anchoCaracteres = 64;
           break;
         default:
-          anchoCaracteres = 48;
+          anchoCaracteres = 48; // valor por defecto
+          console.warn(`Tamaño de papel desconocido: ${printerConfig.paperSize}. Usando ancho por defecto.`);
       }
   
       conector.EstablecerTamañoFuente(1, 1);
@@ -415,6 +416,10 @@ const SalesPage: React.FC = () => {
       conector.EscribirTexto("Ticket de venta\n");
       conector.EscribirTexto("=".repeat(anchoCaracteres) + "\n");
       conector.EstablecerEnfatizado(false);
+  
+      // Añadir fecha y hora
+      conector.EscribirTexto(`Fecha: ${new Date().toLocaleString()}\n`);
+      conector.EscribirTexto("=".repeat(anchoCaracteres) + "\n");
   
       cart.forEach(item => {
         const totalPieces = item.unitType === 'boxes' ? item.quantity * item.piecesPerBox : item.quantity;
@@ -431,6 +436,7 @@ const SalesPage: React.FC = () => {
       }
   
       conector.Corte(3);
+      
       const resultado = await conector.imprimirEn(printerConfig.printerName);
   
       if ('error' in resultado) {
@@ -440,7 +446,11 @@ const SalesPage: React.FC = () => {
       toast.success('Ticket impreso correctamente');
     } catch (error) {
       console.error('Error al imprimir:', error);
-      toast.error(`Error al imprimir el ticket: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+      if (error instanceof Error) {
+        toast.error(`Error al imprimir el ticket: ${error.message}`);
+      } else {
+        toast.error('Error desconocido al imprimir el ticket');
+      }
     }
   };
 
