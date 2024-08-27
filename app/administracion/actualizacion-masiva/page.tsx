@@ -16,14 +16,16 @@ async function updateAllProducts() {
       },
     });
 
+    const data = await response.json();
+
     if (!response.ok) {
-      throw new Error('La respuesta de la red no fue ok');
+      console.error('Respuesta del servidor:', data);
+      throw new Error(data.error || `Error del servidor: ${response.status} ${response.statusText}`);
     }
 
-    const data = await response.json();
     return data;
   } catch (error) {
-    console.error('Error al actualizar los productos:', error);
+    console.error('Error al actualizar las ubicaciones de los productos:', error);
     throw error;
   }
 }
@@ -34,6 +36,21 @@ const MassUpdatePage = () => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateResult, setUpdateResult] = useState<{ success: boolean; message: string } | null>(null);
 
+  const handleUpdate = async () => {
+    setIsUpdating(true);
+    try {
+      const result = await updateAllProducts();
+      setUpdateResult({ success: true, message: result.message });
+    } catch (error) {
+      setUpdateResult({ 
+        success: false, 
+        message: error instanceof Error ? error.message : 'Error desconocido al actualizar las ubicaciones de los productos.'
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   if (status === 'loading') {
     return <LoadingSpinner />;
   }
@@ -42,18 +59,6 @@ const MassUpdatePage = () => {
     router.push('/login');
     return null;
   }
-
-  const handleUpdate = async () => {
-    setIsUpdating(true);
-    try {
-      const result = await updateAllProducts();
-      setUpdateResult({ success: true, message: result.message });
-    } catch (error) {
-      setUpdateResult({ success: false, message: 'Error al actualizar los productos.' });
-    } finally {
-      setIsUpdating(false);
-    }
-  };
 
   const userCategories = [
     { name: 'Punto de venta', allowedRoles: ['vendedor'], icon: '💰' },
@@ -66,26 +71,18 @@ const MassUpdatePage = () => {
   return (
     <div className="min-h-screen bg-secondary text-primary flex flex-col justify-between">
       <div className="p-4">
-        <h1 className="text-3xl font-bold mb-6 text-center">Actualización Masiva de Productos</h1>
+        <h1 className="text-3xl font-bold mb-6 text-center">Actualización Masiva de Ubicaciones de Productos</h1>
         <div className="bg-gray-900 rounded-lg p-6 mb-6 shadow-md">
-          <p className="mb-4">Esta acción actualizará todos los productos con los siguientes valores:</p>
+          <p className="mb-4">Esta acción actualizará todos los productos con las siguientes ubicaciones:</p>
           <ul className="list-disc list-inside mb-4">
-            <li>Precio 1: $100</li>
-            <li>Cantidad mínima para Precio 1: 1</li>
-            <li>Precio 2: $90</li>
-            <li>Cantidad mínima para Precio 2: 3</li>
-            <li>Precio 3: $80</li>
-            <li>Cantidad mínima para Precio 3: Se establecerá al valor actual de &quot;Piezas por caja&quot;</li>
-            <li>Precio 4: $50</li>
-            <li>Precio 5: $30</li>
-            <li>Costo: $10</li>
-            <li>Categoría: &quot;Sin categoría&quot;</li>
-            <li>Disponibilidad: true</li>
-            <li>Cantidad en ubicaciones: Se multiplicará por el valor de &quot;Piezas por caja&quot;</li>
+            <li>L120: 100,000 unidades</li>
+            <li>L123: 100,000 unidades</li>
+            <li>L144: 100,000 unidades</li>
+            <li>L152: 100,000 unidades</li>
           </ul>
           <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4" role="alert">
             <p className="font-bold">Advertencia</p>
-            <p>Esta acción modificará las cantidades en las ubicaciones. La nueva cantidad será el resultado de multiplicar la cantidad actual por el número de piezas por caja.</p>
+            <p>Esta acción agregará las nuevas ubicaciones a todos los productos. Si un producto ya tiene alguna de estas ubicaciones, su cantidad será actualizada a 100,000 unidades.</p>
           </div>
           <button 
             onClick={handleUpdate} 
@@ -97,7 +94,7 @@ const MassUpdatePage = () => {
               "disabled:opacity-50 disabled:cursor-not-allowed"
             )}
           >
-            {isUpdating ? 'Actualizando...' : 'Actualizar Todos los Productos'}
+            {isUpdating ? 'Actualizando...' : 'Actualizar Ubicaciones de Productos'}
           </button>
         </div>
         

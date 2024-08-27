@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -97,7 +96,6 @@ const SalesPage: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [userLocation, setUserLocation] = useState<string>('');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [cart, setCart] = useState<CartItem[]>([]);
   const [quantity, setQuantity] = useState(1);
   const [unitType, setUnitType] = useState<'pieces' | 'boxes'>('pieces');
   const [searchTermTop, setSearchTermTop] = useState('');
@@ -117,6 +115,19 @@ const SalesPage: React.FC = () => {
   const [isCorteModalOpen, setIsCorteModalOpen] = useState(false);
   const [cashAmountCorte, setCashAmountCorte] = useState('');
   const [cardAmountCorte, setCardAmountCorte] = useState('');
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    if (typeof window !== 'undefined') {
+      const savedCart = localStorage.getItem('cart');
+      return savedCart ? JSON.parse(savedCart) : [];
+    }
+    return [];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('cart', JSON.stringify(cart));
+  }, [cart]);
+
 
   const fetchBusinessInfo = useCallback(async () => {
     if (!userLocation) return;
@@ -134,15 +145,6 @@ const SalesPage: React.FC = () => {
   }, [userLocation]);
 
   useEffect(() => {
-    if (status === 'authenticated' && session?.user) {
-      fetchUserLocation();
-      fetchProducts();
-    } else if (status === 'unauthenticated') {
-      router.push('/login');
-    }
-  }, [status, router, session]);
-
-  useEffect(() => {
     fetchBusinessInfo();
   }, [fetchBusinessInfo]);
 
@@ -151,7 +153,7 @@ const SalesPage: React.FC = () => {
     setPluginConnected(true);
   }, []);
 
-  const fetchUserLocation = async () => {
+  const fetchUserLocation = useCallback(async () => {
     try {
       const response = await fetch('/api/user/location');
       if (!response.ok) {
@@ -162,9 +164,10 @@ const SalesPage: React.FC = () => {
     } catch (error) {
       console.error('Error:', error);
     }
-  };
+  }, []);
 
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
+    setIsUpdating(true);
     try {
       const response = await fetch('/api/products');
       if (!response.ok) {
@@ -172,18 +175,30 @@ const SalesPage: React.FC = () => {
       }
       const data = await response.json();
       setProducts(data);
+      toast.success('Productos actualizados correctamente');
     } catch (error) {
       console.error('Error:', error);
+      toast.error('Error al actualizar productos');
+    } finally {
+      setIsUpdating(false);
     }
-  };
+  }, []);
 
-  const isProductAvailableInLocation = (product: Product): boolean => {
-    return product.stockLocations.some(location => 
-      location.location === userLocation && location.quantity > 0
-    );
-  };
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user) {
+      fetchUserLocation();
+      fetchProducts();
+    } else if (status === 'unauthenticated') {
+      router.push('/login');
+    }
+  }, [status, router, session, fetchUserLocation, fetchProducts]);
 
   const handleSearchTop = () => {
+    if (searchTermTop.trim().toUpperCase() === 'ACTUALIZAR') {
+      fetchProducts();
+      setSearchTermTop('');
+      return;
+    }
     if (searchTermTop.trim().toUpperCase() === 'CORTE') {
       setIsCorteModalOpen(true);
       setSearchTermTop('');
@@ -321,6 +336,7 @@ const SalesPage: React.FC = () => {
       });
   
       setCart(updatedCart);
+      localStorage.setItem('cart', JSON.stringify(updatedCart));
       setSelectedProduct(null);
       setQuantity(1);
       setUnitType('pieces');
@@ -672,8 +688,9 @@ const SalesPage: React.FC = () => {
               <Button
                 onClick={handleSearchTop}
                 className="ml-2"
+                disabled={isUpdating}
               >
-                Buscar
+                {isUpdating ? 'Actualizando...' : 'Buscar'}
               </Button>
             </div>
             {selectedProduct && (
