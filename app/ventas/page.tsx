@@ -123,6 +123,7 @@ const SalesPage: React.FC = () => {
     }
     return [];
   });
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     localStorage.setItem('cart', JSON.stringify(cart));
@@ -341,6 +342,10 @@ const SalesPage: React.FC = () => {
       setQuantity(1);
       setUnitType('pieces');
       toast.success('Producto añadido al carrito');
+
+      if (searchInputRef.current) {
+        searchInputRef.current.focus();
+      }
     }
   };
 
@@ -684,6 +689,7 @@ const SalesPage: React.FC = () => {
                 onChange={handleSearchTopChange}
                 onKeyDown={handleKeyPressTop}
                 className="flex-grow"
+                ref={searchInputRef} 
               />
               <Button
                 onClick={handleSearchTop}
