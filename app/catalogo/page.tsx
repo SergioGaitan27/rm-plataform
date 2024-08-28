@@ -129,9 +129,6 @@ const ProductCatalog: React.FC = () => {
         </header>
         <main className="flex-1 p-4 overflow-x-hidden overflow-y-auto">
           <Card className="mb-4">
-            <CardHeader>
-              <CardTitle>Catálogo de Productos</CardTitle>
-            </CardHeader>
             <CardContent>
               <Input
                 type="text"
