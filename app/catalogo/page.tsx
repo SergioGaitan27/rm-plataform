@@ -129,13 +129,14 @@ const ProductCatalog: React.FC = () => {
         </header>
         <main className="flex-1 p-4 overflow-x-hidden overflow-y-auto">
         <Card className="mb-4 flex justify-center items-center p-4">
-          <Input
-            type="text"
-            placeholder="Buscar por código de caja, código de producto o nombre"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-[95%]"
-          />
+        <Input
+          type="text"
+          placeholder="Buscar por código de caja, código de producto o nombre"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-[95%] text-base" // Asegura un tamaño de fuente de al menos 16px
+          style={{ fontSize: '16px' }} // Fuerza el tamaño de fuente a 16px
+        />
         </Card>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {filteredProducts.map((product) => (
