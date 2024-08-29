@@ -29,6 +29,7 @@ interface Product {
     price5?: number;
     stockLocations: StockLocation[];
     imageUrl?: string;
+    availability: boolean;
   }
 
 type Category = {
@@ -101,15 +102,17 @@ const EditProductPage: React.FC = () => {
     setEditedProduct({ ...product });
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     if (!editedProduct) return;
 
-    const { name, value } = e.target;
+    const { name, value, type } = e.target;
     setEditedProduct(prev => ({
         ...prev!,
-        [name]: name.includes('price') || name === 'cost' || name.includes('MinQty') || name === 'piecesPerBox'
-            ? value === '' ? 0 : Number(value) // Evitar null, usar 0 como fallback
-            : value.toUpperCase(), // Convertir a mayúsculas para los campos de texto
+        [name]: type === 'checkbox' 
+            ? (e.target as HTMLInputElement).checked
+            : name.includes('price') || name === 'cost' || name.includes('MinQty') || name === 'piecesPerBox'
+                ? value === '' ? 0 : Number(value)
+                : value.toUpperCase(),
     }));
   };
 
@@ -282,6 +285,16 @@ const EditProductPage: React.FC = () => {
                   onChange={handleInputChange}
                   className="w-full p-2 bg-gray-800 rounded"
                   required
+                />
+              </div>
+              <div className="flex items-center space-x-2">
+                <label className="block">Disponible</label>
+                <input
+                  type="checkbox"
+                  name="availability"
+                  checked={editedProduct?.availability || false}
+                  onChange={handleInputChange}
+                  className="form-checkbox h-5 w-5 text-yellow-400"
                 />
               </div>
               <div>
