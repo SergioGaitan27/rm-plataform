@@ -4,13 +4,14 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import LoadingSpinner from '@/components/LoadingSpinner';
 import SideNavBar from '@/components/SideNavBar';
 import { Menu, X } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
 interface Product {
   _id: string;
@@ -56,6 +57,12 @@ const getProductStatus = (product: Product, userLocation: string): 'inStock' | '
   }
 };
 
+const calculateInventory = (quantity: number, piecesPerBox: number) => {
+  const boxes = Math.floor(quantity / piecesPerBox);
+  const loosePieces = quantity % piecesPerBox;
+  return { boxes, loosePieces };
+};
+
 const ProductCatalog: React.FC = () => {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -68,53 +75,61 @@ const ProductCatalog: React.FC = () => {
   const [userLocation, setUserLocation] = useState<string>('');
   const [activeAvailability, setActiveAvailability] = useState<'all' | 'available' | 'unavailable'>('all');
   const [activeCategory, setActiveCategory] = useState<'inStock' | 'available' | 'unavailable' | ''>('');
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const fetchProducts = useCallback(async () => {
+    setIsUpdating(true);
+    try {
+      const response = await fetch('/api/products');
+      if (!response.ok) {
+        throw new Error('Error al obtener productos');
+      }
+      const data = await response.json();
+      setProducts(data);
+      setFilteredProducts(data);
+      toast.success('Productos actualizados correctamente');
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error('Error al actualizar productos');
+    } finally {
+      setIsUpdating(false);
+      setLoading(false); // Ensure loading is set to false after fetching products
+    }
+  }, []);
+
+  const fetchCategories = useCallback(async () => {
+    setCategories([
+      { name: 'Punto de venta', allowedRoles: ['vendedor'], icon: '💰', path: '/ventas' },
+      { name: 'Créditos', allowedRoles: ['super_administrador', 'administrador'], icon: '💳', path: '/creditos' },
+      { name: 'Catálogo', allowedRoles: ['super_administrador', 'administrador'], icon: '📚', path: '/catalogo' },
+      { name: 'Administración', allowedRoles: ['super_administrador', 'administrador'], icon: '⚙️', path: '/administracion' },
+      { name: 'Dashboard', allowedRoles: ['super_administrador', 'administrador'], icon: '🗂️', path: '/dashboard' },
+    ]);
+  }, []);
+
+  const fetchUserLocation = useCallback(async () => {
+    try {
+      const response = await fetch('/api/user/location');
+      if (!response.ok) {
+        throw new Error('Error al obtener la ubicación del usuario');
+      }
+      const data = await response.json();
+      setUserLocation(data.location);
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  }, []);
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const response = await fetch('/api/products');
-        if (!response.ok) {
-          throw new Error('Error al obtener productos');
-        }
-        const data = await response.json();
-        setProducts(data);
-        setFilteredProducts(data);
-      } catch (error) {
-        console.error('Error:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    const fetchCategories = async () => {
-      setCategories([
-        { name: 'Punto de venta', allowedRoles: ['vendedor'], icon: '💰', path: '/ventas' },
-        { name: 'Créditos', allowedRoles: ['super_administrador', 'administrador'], icon: '💳', path: '/creditos' },
-        { name: 'Catálogo', allowedRoles: ['super_administrador', 'administrador'], icon: '📚', path: '/catalogo' },
-        { name: 'Administración', allowedRoles: ['super_administrador', 'administrador'], icon: '⚙️', path: '/administracion' },
-        { name: 'Dashboard', allowedRoles: ['super_administrador', 'administrador'], icon: '🗂️', path: '/dashboard' },
-      ]);
-    };
-
-    const fetchUserLocation = async () => {
-      try {
-        const response = await fetch('/api/user/location');
-        if (!response.ok) {
-          throw new Error('Error al obtener la ubicación del usuario');
-        }
-        const data = await response.json();
-        setUserLocation(data.location);
-      } catch (error) {
-        console.error('Error:', error);
-      }
-    };
-
     if (status === 'authenticated') {
-      fetchProducts();
-      fetchCategories();
-      fetchUserLocation();
+      Promise.all([fetchProducts(), fetchCategories(), fetchUserLocation()])
+        .then(() => setLoading(false))
+        .catch((error) => {
+          console.error('Error loading data:', error);
+          setLoading(false);
+        });
     }
-  }, [status]);
+  }, [status, fetchProducts, fetchCategories, fetchUserLocation]);
 
   const filterProducts = useCallback(() => {
     const filtered = products.filter(product => {
@@ -166,15 +181,24 @@ const ProductCatalog: React.FC = () => {
     return product.availability ? 'border-green-500' : 'border-red-500';
   };
 
-  const groupProducts = (products: Product[]) => {
-    return products.reduce((acc, product) => {
-      const status = getProductStatus(product, userLocation);
-      acc[status].push(product);
-      return acc;
-    }, { inStock: [], available: [], unavailable: [] } as Record<'inStock' | 'available' | 'unavailable', Product[]>);
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value.toUpperCase());
   };
 
-  const groupedProducts = groupProducts(filteredProducts);
+  const handleSearch = () => {
+    if (searchTerm.trim().toUpperCase() === 'ACTUALIZAR') {
+      fetchProducts();
+      setSearchTerm('');
+      return;
+    }
+    filterProducts();
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
 
   const renderProductCard = (product: Product) => (
     <Card key={product._id} className={`flex flex-col border-2 ${getBorderColor(product)}`}>
@@ -206,15 +230,20 @@ const ProductCatalog: React.FC = () => {
         </div>
         <div className="mt-2 text-xs sm:text-sm">
           <p className="font-semibold">Inventario:</p>
-          {product.stockLocations.map((location, index) => (
-            <p key={index}>{location.location}: {location.quantity}</p>
-          ))}
+          {product.stockLocations.map((location, index) => {
+            const { boxes, loosePieces } = calculateInventory(location.quantity, product.piecesPerBox);
+            return (
+              <p key={index}>
+                {location.location}: {boxes} {boxes === 1 ? 'caja' : 'cajas'}
+                {loosePieces > 0 && ` y ${loosePieces} ${loosePieces === 1 ? 'pieza' : 'piezas'}`}
+                {` (Total: ${location.quantity})`}
+              </p>
+            );
+          })}
         </div>
       </CardContent>
     </Card>
   );
-
-  const showSecondFilter = activeCategory !== '' && activeCategory !== 'unavailable';
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
@@ -276,7 +305,7 @@ const ProductCatalog: React.FC = () => {
                 Sin existencia
               </Button>
             </div>
-            {showSecondFilter && (
+            {activeCategory !== '' && activeCategory !== 'unavailable' && (
               <Tabs 
                 value={activeAvailability} 
                 className="w-full" 
@@ -292,20 +321,26 @@ const ProductCatalog: React.FC = () => {
           </Card>
           <Card className="mb-4 flex flex-col justify-center items-center p-4">
             <p className="text-lg sm:text-xl font-bold">Buscador de productos</p>
-            <Input
-              type="text"
-              placeholder="Buscar por código o nombre"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full text-sm sm:text-base mb-4 mt-4"
-            />
+            <div className="flex w-full mt-4">
+              <Input
+                type="text"
+                placeholder="Buscar por código o nombre"
+                value={searchTerm}
+                onChange={handleSearchChange}
+                onKeyDown={handleKeyPress}
+                className="flex-grow"
+              />
+              <Button
+                onClick={handleSearch}
+                className="ml-2"
+                disabled={isUpdating}
+              >
+                {isUpdating ? 'Actualizando...' : 'Buscar'}
+              </Button>
+            </div>
           </Card>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {Object.entries(groupedProducts).map(([group, products]) => (
-              <React.Fragment key={group}>
-                {products.map(renderProductCard)}
-              </React.Fragment>
-            ))}
+            {filteredProducts.map(renderProductCard)}
           </div>
         </main>
       </div>
