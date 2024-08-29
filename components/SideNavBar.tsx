@@ -12,7 +12,8 @@ type Category = {
 type SideNavBarProps = {
   categories: Category[];
   isOpen: boolean;
-  onToggle: () => void;  // Añadimos esta línea
+  onToggle: () => void;
+  className?: string;  // Añadimos esta línea para aceptar className como prop
 };
 
 const iconMap = {
@@ -23,13 +24,13 @@ const iconMap = {
   '🗂️': BarChart2,
 };
 
-const SideNavBar: React.FC<SideNavBarProps> = ({ categories, isOpen, onToggle }) => {
+const SideNavBar: React.FC<SideNavBarProps> = ({ categories, isOpen, onToggle, className }) => {
   return (
     <>
       <nav 
         className={`bg-gray-900 fixed top-0 left-0 bottom-0 w-64 shadow-lg transition-transform duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
-        } z-50`}
+        } z-50 ${className || ''}`}  // Aplicamos la prop className aquí
       >
         <div className="flex items-center justify-between p-4 border-b border-gray-700">
           <Link href="/" className="text-yellow-400 hover:text-yellow-500 transition-colors flex items-center">
