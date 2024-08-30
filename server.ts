@@ -1,14 +1,12 @@
-// server.ts
-
 import express from 'express';
 import { createServer } from 'http';
 import { parse } from 'url';
 import next from 'next';
 import { Server } from 'socket.io';
 import mongoose from 'mongoose';
-import Ticket from '@/models/Ticket';
 import cors from 'cors';
-import { setSocketInstance } from './lib/socket'; // Updated import
+import { setSocketInstance } from './lib/socket';
+import { setupSocketHandlers } from './lib/socketHandlers';
 
 const dev = process.env.NODE_ENV !== 'production';
 const app = next({ dev });
@@ -40,69 +38,8 @@ app.prepare().then(() => {
   });
   setSocketInstance(io);
 
-  io.on('connection', (socket) => {
-    console.log('Client connected');
-
-    socket.on('newTicket', async (ticketData) => {
-      try {
-        // Save the ticket in MongoDB
-        const ticket = new Ticket(ticketData);
-        await ticket.save();
-
-        // Emit update to all clients
-        io.emit('ticketUpdate', {
-          date: new Date(),
-          profit: ticket.totalProfit,
-          sales: ticket.totalAmount,
-          location: ticket.location
-        });
-
-        console.log('New ticket saved and update emitted:', ticket.ticketId);
-      } catch (error) {
-        console.error('Error saving ticket:', error);
-      }
-    });
-
-    socket.on('requestInitialData', async ({ timeframe, location }) => {
-      try {
-        let startDate = new Date();
-        if (timeframe === 'week') {
-          startDate.setDate(startDate.getDate() - 7);
-        } else if (timeframe === 'month') {
-          startDate.setMonth(startDate.getMonth() - 1);
-        } else {
-          startDate.setHours(0, 0, 0, 0); // Start of the current day
-        }
-    
-        const matchStage: any = { date: { $gte: startDate } };
-        if (location) {
-          matchStage.location = location;
-        }
-    
-        const profitData = await Ticket.aggregate([
-          { $match: matchStage },
-          { 
-            $group: {
-              _id: {
-                $dateToString: { format: "%Y-%m-%d", date: "$date" }
-              },
-              totalProfit: { $sum: "$totalProfit" },
-              totalSales: { $sum: "$totalAmount" }
-            }
-          },
-          { $sort: { _id: 1 } }
-        ]);
-    
-        socket.emit('initialData', profitData);
-      } catch (error) {
-        console.error('Error fetching initial data:', error);
-      }
-    });
-
-    socket.on('disconnect', () => {
-      console.log('Client disconnected');
-    });
-  });
+  // Setup Socket.IO event handlers
+  setupSocketHandlers(io);
 
   // Handle all requests with Next.js
   expressApp.all('*', (req, res) => {

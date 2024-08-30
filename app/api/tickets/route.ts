@@ -1,11 +1,10 @@
-// app/api/tickets/route.ts
-
 import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import Ticket, { ITicket } from '@/models/Ticket';
 import Product, { IProduct, IStockLocation } from '@/models/Product';
 import mongoose from 'mongoose';
 import { getSocketInstance } from '@/lib/socket';
+import { emitTicketUpdate } from '@/lib/socketHandlers';
 
 // Define a simple type for ticket items
 interface SimpleTicketItem {
@@ -108,12 +107,7 @@ export async function POST(req: Request) {
     // Emit new ticket event via Socket.IO
     const io = getSocketInstance();
     if (io) {
-      io.emit('ticketUpdate', {
-        date: newTicket.date,
-        profit: newTicket.totalProfit,
-        sales: newTicket.totalAmount,
-        location: newTicket.location
-      });
+      emitTicketUpdate(io, newTicket);
     }
 
     return NextResponse.json({ 

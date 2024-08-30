@@ -16,6 +16,7 @@ import { toast } from 'react-hot-toast';
 import ProductInfo from '@/components/ProductInfo';
 import ConectorPluginV3 from '@/app/utils/ConectorPluginV3';
 import { io, Socket } from 'socket.io-client';
+import useSocket from '@/hooks/useSocket';
 
 
 interface CorteResults {
@@ -129,7 +130,6 @@ const SalesPage: React.FC = () => {
   const [corteResults, setCorteResults] = useState<any>(null);
   const [isCorteLoading, setIsCorteLoading] = useState(false);
   const [showCorteConfirmation, setShowCorteConfirmation] = useState(false);
-  const [socket, setSocket] = useState<Socket | null>(null);
   const [cart, setCart] = useState<CartItem[]>(() => {
     if (typeof window !== 'undefined') {
       const savedCart = localStorage.getItem('cart');
@@ -142,6 +142,7 @@ const SalesPage: React.FC = () => {
     localStorage.setItem('cart', JSON.stringify(cart));
   }, [cart]);
 
+  const socket = useSocket();
 
   const fetchBusinessInfo = useCallback(async () => {
     if (!userLocation) return;
@@ -165,15 +166,6 @@ const SalesPage: React.FC = () => {
   useEffect(() => {
     // El plugin siempre estará disponible ahora que es un módulo TypeScript
     setPluginConnected(true);
-  }, []);
-
-  useEffect(() => {
-    const newSocket = io('https://www.rmazh.com.mx'); // Ajusta la URL según tu configuración
-    setSocket(newSocket);
-  
-    return () => {
-      newSocket.disconnect();
-    };
   }, []);
 
   const fetchUserLocation = useCallback(async () => {
@@ -630,20 +622,20 @@ const SalesPage: React.FC = () => {
     setIsLoading(true);
 
     const ticketData = {
-    items: cart.map(item => ({
-      productId: item._id,
-      productName: item.name,
-      quantity: item.quantity,
-      unitType: item.unitType,
-      pricePerUnit: item.appliedPrice,
-      total: item.appliedPrice * item.quantity * (item.unitType === 'boxes' ? item.piecesPerBox : 1)
-    })),
-    totalAmount: calculateTotal(),
-    paymentType,
-    amountPaid: parseFloat(amountPaid),
-    change,
-    location: userLocation // Asegúrate de que userLocation esté definido y sea correcto
-  };
+      items: cart.map(item => ({
+        productId: item._id,
+        productName: item.name,
+        quantity: item.quantity,
+        unitType: item.unitType,
+        pricePerUnit: item.appliedPrice,
+        total: item.appliedPrice * item.quantity * (item.unitType === 'boxes' ? item.piecesPerBox : 1)
+      })),
+      totalAmount: calculateTotal(),
+      paymentType,
+      amountPaid: parseFloat(amountPaid),
+      change,
+      location: userLocation // Asegúrate de que userLocation esté definido y sea correcto
+    };
 
   try {
     const response = await fetch('/api/tickets', {
@@ -659,6 +651,11 @@ const SalesPage: React.FC = () => {
     }
 
     const data = await response.json();
+
+    // Emitir el evento de nuevo ticket
+    if (socket) {
+      socket.emit('newTicket', data.ticket);
+    }
     
     setProducts(prevProducts => {
       const updatedProducts = [...prevProducts];
@@ -700,8 +697,12 @@ const SalesPage: React.FC = () => {
         searchInputRef.current.focus();
       }
     } catch (error) {
-      console.error('Error al procesar el pago o imprimir:', error);
-      toast.error('Error al procesar el pago o imprimir el ticket');
+      console.error('Error al procesar el pago:', error);
+      if (error instanceof Error) {
+        toast.error(`Error al procesar el pago: ${error.message}`);
+      } else {
+        toast.error('Error desconocido al procesar el pago');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -817,6 +818,16 @@ const SalesPage: React.FC = () => {
     setCorteResults(null);
     setShowCorteConfirmation(false);
   };
+
+  useEffect(() => {
+    return () => {
+      if (socket) {
+        socket.off('connect');
+        socket.off('disconnect');
+        // Agrega aquí cualquier otro evento que puedas estar escuchando
+      }
+    };
+  }, [socket]);
 
   if (status === 'loading') {
     return <div>Cargando...</div>;
@@ -1082,5 +1093,6 @@ const SalesPage: React.FC = () => {
       </div>
   );
 };
+
 
 export default SalesPage;
