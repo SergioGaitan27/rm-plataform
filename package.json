@@ -30,6 +30,8 @@
     "next-cloudinary": "^6.7.0",
     "node-fetch": "^2.7.0",
     "pdfmake": "^0.2.10",
+    "pusher": "^5.2.0",
+    "pusher-js": "8.4.0-rc2",
     "quagga": "^0.12.1",
     "react": "^18",
     "react-day-picker": "^9.0.8",

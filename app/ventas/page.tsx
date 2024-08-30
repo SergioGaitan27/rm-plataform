@@ -13,14 +13,6 @@ import ProductCard from '@/components/ProductCard';
 import { toast } from 'react-hot-toast';
 import ProductInfo from '@/components/ProductInfo';
 import ConectorPluginV3 from '@/app/utils/ConectorPluginV3';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import Link from 'next/link';
-
-interface CorteResults {
-  totalCash: number;
-  totalCard: number;
-  totalTickets: number;
-}
 
 interface IBusinessInfo {
   businessName: string;

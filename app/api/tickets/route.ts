@@ -3,6 +3,15 @@ import { connectDB } from '@/lib/mongodb';
 import Ticket, { ITicket } from '@/models/Ticket';
 import Product, { IProduct, IStockLocation } from '@/models/Product';
 import mongoose from 'mongoose';
+import Pusher from 'pusher';
+
+const pusher = new Pusher({
+  appId: process.env.PUSHER_APP_ID!,
+  key: process.env.NEXT_PUBLIC_PUSHER_APP_KEY!,
+  secret: process.env.PUSHER_APP_SECRET!,
+  cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
+  useTLS: true
+});
 
 // Definimos un tipo simple para los items del ticket
 interface SimpleTicketItem {
@@ -101,6 +110,12 @@ export async function POST(req: Request) {
     }));
 
     const updatedProducts = await Product.find({ _id: { $in: updatedProductIds.filter(Boolean) } });
+
+    // Trigger Pusher event with profit information
+    await pusher.trigger('sales-channel', 'new-sale', {
+      profit: totalProfit,
+      timestamp: new Date().toISOString()
+    });
 
     return NextResponse.json({ 
       message: 'Ticket guardado exitosamente', 
