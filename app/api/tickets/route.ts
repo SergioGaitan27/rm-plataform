@@ -1,3 +1,5 @@
+// app/api/tickets/route.ts
+
 import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import Ticket, { ITicket } from '@/models/Ticket';
@@ -106,7 +108,7 @@ export async function POST(req: Request) {
     // Emit new ticket event via Socket.IO
     const io = getSocketInstance();
     if (io) {
-      io.emit('newTicket', {
+      io.emit('ticketUpdate', {
         date: newTicket.date,
         profit: newTicket.totalProfit,
         sales: newTicket.totalAmount,

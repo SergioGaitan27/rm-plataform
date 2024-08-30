@@ -1,3 +1,5 @@
+// server.ts
+
 import express from 'express';
 import { createServer } from 'http';
 import { parse } from 'url';
@@ -71,12 +73,12 @@ app.prepare().then(() => {
         } else {
           startDate.setHours(0, 0, 0, 0); // Start of the current day
         }
-
+    
         const matchStage: any = { date: { $gte: startDate } };
         if (location) {
           matchStage.location = location;
         }
-
+    
         const profitData = await Ticket.aggregate([
           { $match: matchStage },
           { 
@@ -90,7 +92,7 @@ app.prepare().then(() => {
           },
           { $sort: { _id: 1 } }
         ]);
-
+    
         socket.emit('initialData', profitData);
       } catch (error) {
         console.error('Error fetching initial data:', error);
