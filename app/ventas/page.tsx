@@ -13,6 +13,14 @@ import ProductCard from '@/components/ProductCard';
 import { toast } from 'react-hot-toast';
 import ProductInfo from '@/components/ProductInfo';
 import ConectorPluginV3 from '@/app/utils/ConectorPluginV3';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import Link from 'next/link';
+
+interface CorteResults {
+  totalCash: number;
+  totalCard: number;
+  totalTickets: number;
+}
 
 interface IBusinessInfo {
   businessName: string;
@@ -112,10 +120,13 @@ const SalesPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [pluginConnected, setPluginConnected] = useState(false);
   const [businessInfo, setBusinessInfo] = useState<IBusinessInfo | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
   const [isCorteModalOpen, setIsCorteModalOpen] = useState(false);
   const [cashAmountCorte, setCashAmountCorte] = useState('');
   const [cardAmountCorte, setCardAmountCorte] = useState('');
-  const [isUpdating, setIsUpdating] = useState(false);
+  const [corteResults, setCorteResults] = useState<any>(null);
+  const [isCorteLoading, setIsCorteLoading] = useState(false);
+  const [showCorteConfirmation, setShowCorteConfirmation] = useState(false);
   const [cart, setCart] = useState<CartItem[]>(() => {
     if (typeof window !== 'undefined') {
       const savedCart = localStorage.getItem('cart');
@@ -124,7 +135,6 @@ const SalesPage: React.FC = () => {
     return [];
   });
   const searchInputRef = useRef<HTMLInputElement>(null);
-
   useEffect(() => {
     localStorage.setItem('cart', JSON.stringify(cart));
   }, [cart]);
@@ -668,6 +678,117 @@ const SalesPage: React.FC = () => {
     }
   };
 
+  const handleCorte = async () => {
+    // Validación de los valores ingresados
+    const cashAmount = parseFloat(cashAmountCorte);
+    const cardAmount = parseFloat(cardAmountCorte);
+
+    if (isNaN(cashAmount) || isNaN(cardAmount)) {
+      toast.error('Por favor, ingrese montos válidos para efectivo y tarjeta.');
+      return;
+    }
+
+    // Mostrar confirmación antes de proceder
+    setShowCorteConfirmation(true);
+  };
+
+  const printCorteTicket = async (corteData: any) => {
+    if (!pluginConnected) {
+      toast.error('El plugin de impresión no está conectado');
+      return;
+    }
+  
+    try {
+      const conector = new ConectorPluginV3(undefined, 'YmEwNzRiYWFfXzIwMjQtMDctMTBfXzIwMjQtMTAtMDgjIyMxUXJaS2xpWjVjbU01VEVmckg5Zm93RWxWOHVmQmhYNjVFQnE1akVFMzBZWG51QUs5YUd0U3Ayc2d0N2E0a1ZiOExEMm1EV2NnTjJhTWR0dDhObUw2bFBLTERGYjBXYkFpTTBBNjJTYlo5KzBLRUVLMzlFeEVLcVR5d2dEcWdsQzUvWlhxZCtxUC9aQ1RnL2M5UVhKRUxJRXVYOGVRU0dxZlg4UFF1MkFiY3doME5mdUdYaitHVk1LMzRvcmRDN0FEeTg4ZStURmlQRktrRW9UcnBMSisrYkJQTC8wZ1ZZdFIxdTNGV3dYQWR0Ylg3U25paU5qZ0I5QmNTQlZRRmp5NWRGYUVyODFnak1UR2VPWHB6T2xMZUhWWmJFVUJCQkhEOENyUGJ4NlNQYXBxOHA1NVlCNS9IZkJ0VWpsSDdMa1JocGlBSWF6Z2hVdzRPMFZ6aVZ6enpVbHNnR091VElWdTdaODRvUDlvWjg5bGI5djIxbTcwSDB4L1ZqSXlGNU52b2JTemoyNXMzL3NxS2I1SEtYVHduVW5tTXBvcWxGZmwwajZXM1ZFQnhkdjh2Y2VRMWtaSWkyY1ZWbjNUK29tTkJLWFRkR0NQSS9UaWgyaWNWdFlQZ05IbENxUXBBK0c3ZHFBUTd4VEh6TEJuT2dMemU2THZuRkpRajBpZkt0dlNHNDNzVU82bmRUaS8zbHpta1orK2lIWmVZR3pIampKWnV5RFRRbEo2MUpOamVYUWpHMTliREFaNFZ3SDhJanBWOEUyRERBLzVDcEYwL1l5MTByTTdlT0t0K1JaTWFlc3pHbkRpeXoydHpRK0Z4ZjNrdFV3U1ZFbCtCcFQ2Y1NLSzVNaFFjWDJjMmlrcWpCbVZSNDBzSVhKMjV1VXB1Nko0L1liMzgzNE1iWT0=');
+  
+      await conector.Iniciar();
+  
+      conector.EstablecerEnfatizado(true);
+      conector.EstablecerTamañoFuente(1, 1);
+      conector.EstablecerAlineacion(ConectorPluginV3.ALINEACION_CENTRO);
+      conector.EscribirTexto("Corte de Caja\n\n");
+      conector.EstablecerEnfatizado(false);
+      conector.EstablecerAlineacion(ConectorPluginV3.ALINEACION_IZQUIERDA);
+  
+      conector.EscribirTexto(`Fecha: ${new Date().toLocaleString()}\n`);
+      conector.EscribirTexto(`Ubicación: ${userLocation}\n\n`);
+  
+      conector.EscribirTexto("Efectivo:\n");
+      conector.EscribirTexto(`  Esperado: $${corteData.expectedCash.toFixed(2)}\n`);
+      conector.EscribirTexto(`  Real: $${corteData.actualCash.toFixed(2)}\n`);
+      conector.EscribirTexto(`  Diferencia: $${(corteData.actualCash - corteData.expectedCash).toFixed(2)}\n\n`);
+  
+      conector.EscribirTexto("Tarjeta:\n");
+      conector.EscribirTexto(`  Esperado: $${corteData.expectedCard.toFixed(2)}\n`);
+      conector.EscribirTexto(`  Real: $${corteData.actualCard.toFixed(2)}\n`);
+      conector.EscribirTexto(`  Diferencia: $${(corteData.actualCard - corteData.expectedCard).toFixed(2)}\n\n`);
+  
+      conector.EscribirTexto(`Total de Tickets: ${corteData.totalTickets}\n\n`);
+  
+      conector.EscribirTexto("Total:\n");
+      conector.EscribirTexto(`  Esperado: $${(corteData.expectedCash + corteData.expectedCard).toFixed(2)}\n`);
+      conector.EscribirTexto(`  Real: $${(corteData.actualCash + corteData.actualCard).toFixed(2)}\n`);
+      conector.EscribirTexto(`  Diferencia: $${((corteData.actualCash + corteData.actualCard) - (corteData.expectedCash + corteData.expectedCard)).toFixed(2)}\n`);
+  
+      conector.Corte(1);
+  
+      const resultado = await conector.imprimirEn(printerConfig.printerName);
+  
+      if (typeof resultado === 'object' && resultado !== null && 'error' in resultado) {
+        throw new Error(resultado.error);
+      } else if (resultado !== true) {
+        throw new Error('La impresión no se completó correctamente');
+      }
+  
+      toast.success('Ticket de corte impreso correctamente');
+    } catch (error) {
+      console.error('Error al imprimir el ticket de corte:', error);
+      toast.error('Error al imprimir el ticket de corte');
+    }
+  };
+
+  const confirmCorte = async () => {
+    setIsCorteLoading(true);
+    try {
+      const response = await fetch('/api/corte', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          location: userLocation,
+          actualCash: parseFloat(cashAmountCorte),
+          actualCard: parseFloat(cardAmountCorte)
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al realizar el corte');
+      }
+
+      const data = await response.json();
+      setCorteResults(data.data);
+      await printCorteTicket(data.data);
+      toast.success('Corte realizado exitosamente');
+
+      // No cerramos el modal inmediatamente para mostrar los resultados
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error('Error al realizar el corte');
+    } finally {
+      setIsCorteLoading(false);
+      setShowCorteConfirmation(false);
+    }
+  };
+
+  const closeCorteModal = () => {
+    setIsCorteModalOpen(false);
+    setCashAmountCorte('');
+    setCardAmountCorte('');
+    setCorteResults(null);
+    setShowCorteConfirmation(false);
+  };
+
   if (status === 'loading') {
     return <div>Cargando...</div>;
   }
@@ -855,51 +976,81 @@ const SalesPage: React.FC = () => {
         </DialogContent>
       </Dialog>
       {/* Modal de Corte */}
-      <Dialog open={isCorteModalOpen} onOpenChange={setIsCorteModalOpen}>
+      <Dialog open={isCorteModalOpen} onOpenChange={closeCorteModal}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Realizar Corte</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="cashAmountCorte">Monto en Efectivo:</Label>
-              <Input
-                id="cashAmountCorte"
-                type="number"
-                value={cashAmountCorte}
-                onChange={(e) => setCashAmountCorte(e.target.value)}
-                placeholder="Ingrese el monto en efectivo"
-                className="mt-2 mb-4"
-              />
+          {!corteResults ? (
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="cashAmountCorte">Monto en Efectivo:</Label>
+                <Input
+                  id="cashAmountCorte"
+                  type="number"
+                  value={cashAmountCorte}
+                  onChange={(e) => setCashAmountCorte(e.target.value)}
+                  placeholder="Ingrese el monto en efectivo"
+                  className="mt-2 mb-4"
+                />
+              </div>
+              <div>
+                <Label htmlFor="cardAmountCorte">Monto en Tarjeta:</Label>
+                <Input
+                  id="cardAmountCorte"
+                  type="number"
+                  value={cardAmountCorte}
+                  onChange={(e) => setCardAmountCorte(e.target.value)}
+                  placeholder="Ingrese el monto en tarjeta"
+                  className="mt-2 mb-4"
+                />
+              </div>
             </div>
-            <div>
-              <Label htmlFor="cardAmountCorte">Monto en Tarjeta:</Label>
-              <Input
-                id="cardAmountCorte"
-                type="number"
-                value={cardAmountCorte}
-                onChange={(e) => setCardAmountCorte(e.target.value)}
-                placeholder="Ingrese el monto en tarjeta"
-                className="mt-2 mb-4"
-              />
+          ) : (
+            <div className="space-y-4">
+              <h3 className="font-bold">Resultados del Corte:</h3>
+              <p>Efectivo Esperado: ${corteResults.expectedCash.toFixed(2)}</p>
+              <p>Efectivo Real: ${corteResults.actualCash.toFixed(2)}</p>
+              <p>Tarjeta Esperada: ${corteResults.expectedCard.toFixed(2)}</p>
+              <p>Tarjeta Real: ${corteResults.actualCard.toFixed(2)}</p>
+              <p>Total de Tickets: {corteResults.totalTickets}</p>
             </div>
-            <p className="font-bold">Total: ${(+cashAmountCorte + +cardAmountCorte).toFixed(2)}</p>
-          </div>
+          )}
           <DialogFooter>
-            <Button onClick={() => setIsCorteModalOpen(false)} variant="outline">Cancelar</Button>
-            <Button
-              onClick={() => {
-                // Aquí puedes manejar la lógica adicional para el corte
-                setIsCorteModalOpen(false);
-                toast.success('Corte realizado exitosamente');
-              }}
-            >
-              Confirmar Corte
+            {!corteResults ? (
+              <>
+                <Button onClick={closeCorteModal} variant="outline">Cancelar</Button>
+                <Button 
+                  onClick={handleCorte} 
+                  disabled={isCorteLoading}
+                >
+                  {isCorteLoading ? 'Procesando...' : 'Realizar Corte'}
+                </Button>
+              </>
+            ) : (
+              <Button onClick={closeCorteModal}>Cerrar</Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Modal de Confirmación de Corte */}
+      <Dialog open={showCorteConfirmation} onOpenChange={setShowCorteConfirmation}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmar Corte</DialogTitle>
+          </DialogHeader>
+          <p>¿Está seguro de que desea realizar el corte con los siguientes montos?</p>
+          <p>Efectivo: ${parseFloat(cashAmountCorte).toFixed(2)}</p>
+          <p>Tarjeta: ${parseFloat(cardAmountCorte).toFixed(2)}</p>
+          <DialogFooter>
+            <Button onClick={() => setShowCorteConfirmation(false)} variant="outline">Cancelar</Button>
+            <Button onClick={confirmCorte} disabled={isCorteLoading}>
+              {isCorteLoading ? 'Procesando...' : 'Confirmar Corte'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
   );
 };
 

@@ -12,6 +12,8 @@ export function generateMetadata(path: string = '/'): Metadata {
       break
     case '/register':
       title = 'Registrar | RMAZH'
+    case '/ventas':
+      title = 'Ventas | RMAZH'
       break
     // Añade más casos según sea necesario
     default:
