@@ -13,8 +13,8 @@ import ProductCard from '@/components/ProductCard';
 import { toast } from 'react-hot-toast';
 import ProductInfo from '@/components/ProductInfo';
 import ConectorPluginV3 from '@/app/utils/ConectorPluginV3';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import Link from 'next/link';
+import { io, Socket } from 'socket.io-client';
+
 
 interface CorteResults {
   totalCash: number;
@@ -127,6 +127,7 @@ const SalesPage: React.FC = () => {
   const [corteResults, setCorteResults] = useState<any>(null);
   const [isCorteLoading, setIsCorteLoading] = useState(false);
   const [showCorteConfirmation, setShowCorteConfirmation] = useState(false);
+  const [socket, setSocket] = useState<Socket | null>(null);
   const [cart, setCart] = useState<CartItem[]>(() => {
     if (typeof window !== 'undefined') {
       const savedCart = localStorage.getItem('cart');
@@ -162,6 +163,15 @@ const SalesPage: React.FC = () => {
   useEffect(() => {
     // El plugin siempre estará disponible ahora que es un módulo TypeScript
     setPluginConnected(true);
+  }, []);
+
+  useEffect(() => {
+    const newSocket = io('http://localhost:3000'); // Ajusta la URL según tu configuración
+    setSocket(newSocket);
+  
+    return () => {
+      newSocket.disconnect();
+    };
   }, []);
 
   const fetchUserLocation = useCallback(async () => {
@@ -648,6 +658,14 @@ const SalesPage: React.FC = () => {
 
     const data = await response.json();
     
+    if (socket) {
+      socket.emit('newTicket', {
+        totalProfit: data.ticket.totalProfit,
+        totalAmount: data.ticket.totalAmount,
+        date: new Date()
+      });
+    }
+
     // Actualizar los productos en el estado local
     setProducts(prevProducts => {
       const updatedProducts = [...prevProducts];
