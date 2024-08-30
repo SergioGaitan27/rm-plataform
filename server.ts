@@ -1,9 +1,12 @@
+import express from 'express';
 import { createServer } from 'http';
 import { parse } from 'url';
 import next from 'next';
 import { Server } from 'socket.io';
 import mongoose from 'mongoose';
-import Ticket from '@/models/Ticket'; // Asegúrate de que la ruta sea correcta
+import Ticket from '@/models/Ticket';
+import cors from 'cors';
+import { setSocketInstance } from './app/api/tickets/route';
 
 const dev = process.env.NODE_ENV !== 'production';
 const app = next({ dev });
@@ -14,12 +17,26 @@ mongoose.connect(process.env.MONGODB_URI as string)
   .catch(err => console.error('MongoDB connection error:', err));
 
 app.prepare().then(() => {
-  const server = createServer((req, res) => {
-    const parsedUrl = parse(req.url!, true);
-    handle(req, res, parsedUrl);
-  });
+  const expressApp = express();
+  const server = createServer(expressApp);
 
-  const io = new Server(server);
+  // Aplicar CORS a todas las rutas HTTP
+  expressApp.use(cors({
+    origin: process.env.CORS_ORIGIN || "https://www.rmazh.com.mx",
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    credentials: true,
+  }));
+
+  // Configuración de Socket.IO
+  const io = new Server(server, {
+    cors: {
+      origin: process.env.CORS_ORIGIN || "https://www.rmazh.com.mx",
+      methods: ["GET", "POST"],
+      credentials: true
+    },
+    path: '/socket.io'
+  });
+  setSocketInstance(io);
 
   io.on('connection', (socket) => {
     console.log('Client connected');
@@ -83,6 +100,11 @@ app.prepare().then(() => {
     socket.on('disconnect', () => {
       console.log('Client disconnected');
     });
+  });
+
+  // Manejar todas las solicitudes con Next.js
+  expressApp.all('*', (req, res) => {
+    return handle(req, res);
   });
 
   server.listen(3000, (err?: any) => {

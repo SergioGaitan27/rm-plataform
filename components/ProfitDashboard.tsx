@@ -1,6 +1,8 @@
+// components/ProfitDashboard.tsx
+
 "use client"
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -17,6 +19,7 @@ interface TicketUpdate {
   date: string;
   profit: number;
   sales: number;
+  location: string;
 }
 
 const ProfitDashboard: React.FC = () => {
@@ -25,29 +28,66 @@ const ProfitDashboard: React.FC = () => {
   const [location, setLocation] = useState<string>('');
   const [socket, setSocket] = useState<Socket | null>(null);
 
+  // Function to get the start date based on the selected timeframe
+  const getStartDate = (selectedTimeframe: string): string => {
+    const now = new Date();
+    switch (selectedTimeframe) {
+      case 'week':
+        now.setDate(now.getDate() - 7);
+        break;
+      case 'month':
+        now.setMonth(now.getMonth() - 1);
+        break;
+      default: // 'day'
+        now.setHours(0, 0, 0, 0);
+    }
+    return now.toISOString();
+  };
+
+  // Function to fetch initial data
+  const fetchInitialData = useCallback(async () => {
+    const startDate = getStartDate(timeframe);
+    const endDate = new Date().toISOString();
+    const response = await fetch(`/api/tickets?startDate=${startDate}&endDate=${endDate}&location=${location}&limit=1000`);
+    const data = await response.json();
+    setProfitData(data.tickets.map((ticket: any) => ({
+      _id: new Date(ticket.date).toISOString().split('T')[0],
+      totalProfit: ticket.totalProfit,
+      totalSales: ticket.totalAmount
+    })));
+  }, [timeframe, location]);
+
+  // Effect to initialize Socket.IO connection
   useEffect(() => {
     const newSocket: Socket = io();
     setSocket(newSocket);
 
-    newSocket.on('initialData', (data: ProfitData[]) => {
-      setProfitData(data);
-    });
+    return () => {
+      newSocket.disconnect();
+    };
+  }, []);
 
-    newSocket.on('ticketUpdate', (newData: TicketUpdate) => {
+  // Effect to handle Socket.IO events and fetch initial data
+  useEffect(() => {
+    if (!socket) return;
+
+    fetchInitialData();
+
+    socket.on('newTicket', (newData: TicketUpdate) => {
       setProfitData((prevData) => {
-        const lastEntry = prevData[prevData.length - 1];
-        if (lastEntry && lastEntry._id === newData.date.split('T')[0]) {
-          // Update the last day if it already exists
-          const updatedLastEntry: ProfitData = {
-            ...lastEntry,
-            totalProfit: lastEntry.totalProfit + newData.profit,
-            totalSales: lastEntry.totalSales + newData.sales
+        const date = new Date(newData.date).toISOString().split('T')[0];
+        const existingIndex = prevData.findIndex(item => item._id === date);
+        if (existingIndex !== -1) {
+          const updatedData = [...prevData];
+          updatedData[existingIndex] = {
+            ...updatedData[existingIndex],
+            totalProfit: updatedData[existingIndex].totalProfit + newData.profit,
+            totalSales: updatedData[existingIndex].totalSales + newData.sales
           };
-          return [...prevData.slice(0, -1), updatedLastEntry];
+          return updatedData;
         } else {
-          // Add a new day if it doesn't exist
           return [...prevData, {
-            _id: newData.date.split('T')[0],
+            _id: date,
             totalProfit: newData.profit,
             totalSales: newData.sales
           }];
@@ -56,15 +96,14 @@ const ProfitDashboard: React.FC = () => {
     });
 
     return () => {
-      newSocket.disconnect();
+      socket.off('newTicket');
     };
-  }, []);
+  }, [socket, fetchInitialData]);
 
+  // Effect to refetch data when timeframe or location changes
   useEffect(() => {
-    if (socket) {
-      socket.emit('requestInitialData', { timeframe, location });
-    }
-  }, [timeframe, location, socket]);
+    fetchInitialData();
+  }, [timeframe, location, fetchInitialData]);
 
   return (
     <div className="p-4">
@@ -73,8 +112,8 @@ const ProfitDashboard: React.FC = () => {
           <CardTitle>Dashboard de Profit en Tiempo Real</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="mb-4">
-            <Select onValueChange={setTimeframe} defaultValue={timeframe}>
+          <div className="mb-4 flex space-x-4">
+            <Select onValueChange={setTimeframe} value={timeframe}>
               <SelectTrigger>
                 <SelectValue placeholder="Seleccione periodo" />
               </SelectTrigger>
@@ -82,6 +121,17 @@ const ProfitDashboard: React.FC = () => {
                 <SelectItem value="day">Día</SelectItem>
                 <SelectItem value="week">Semana</SelectItem>
                 <SelectItem value="month">Mes</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select onValueChange={setLocation} value={location}>
+              <SelectTrigger>
+                <SelectValue placeholder="Seleccione ubicación" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Todas</SelectItem>
+                <SelectItem value="TECOM">TECOM</SelectItem>
+                <SelectItem value="TLAJOMULCO">TLAJOMULCO</SelectItem>
+                {/* Añade más ubicaciones según sea necesario */}
               </SelectContent>
             </Select>
           </div>

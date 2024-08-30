@@ -1,8 +1,11 @@
+// app/api/tickets/route.ts
+
 import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import Ticket, { ITicket } from '@/models/Ticket';
 import Product, { IProduct, IStockLocation } from '@/models/Product';
 import mongoose from 'mongoose';
+import { Server as SocketIOServer } from 'socket.io';
 
 // Definimos un tipo simple para los items del ticket
 interface SimpleTicketItem {
@@ -33,6 +36,12 @@ interface TicketRequestBody {
 async function getNextSequenceNumber(location: string): Promise<number> {
   const lastTicket = await Ticket.findOne({ location }).sort('-sequenceNumber');
   return lastTicket ? lastTicket.sequenceNumber + 1 : 1;
+}
+
+let io: SocketIOServer;
+
+export function setSocketInstance(socketIo: SocketIOServer) {
+  io = socketIo;
 }
 
 export async function POST(req: Request) {
@@ -102,6 +111,16 @@ export async function POST(req: Request) {
 
     const updatedProducts = await Product.find({ _id: { $in: updatedProductIds.filter(Boolean) } });
 
+    // Emitir evento de nuevo ticket a través de Socket.IO
+    if (io) {
+      io.emit('newTicket', {
+        date: newTicket.date,
+        profit: newTicket.totalProfit,
+        sales: newTicket.totalAmount,
+        location: newTicket.location
+      });
+    }
+
     return NextResponse.json({ 
       message: 'Ticket guardado exitosamente', 
       ticket: newTicket,
@@ -116,8 +135,42 @@ export async function POST(req: Request) {
 export async function GET(req: Request) {
   try {
     await connectDB();
-    const tickets = await Ticket.find({}).sort({ date: -1 });
-    return NextResponse.json(tickets);
+    
+    const { searchParams } = new URL(req.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
+    const startDate = searchParams.get('startDate');
+    const endDate = searchParams.get('endDate');
+    const location = searchParams.get('location');
+
+    const query: any = {};
+    if (startDate && endDate) {
+      query.date = {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate)
+      };
+    }
+    if (location) {
+      query.location = location;
+    }
+
+    const skip = (page - 1) * limit;
+
+    const [tickets, total] = await Promise.all([
+      Ticket.find(query)
+        .sort({ date: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Ticket.countDocuments(query)
+    ]);
+
+    return NextResponse.json({
+      tickets,
+      currentPage: page,
+      totalPages: Math.ceil(total / limit),
+      total
+    });
   } catch (error) {
     console.error('Error al obtener los tickets:', error);
     return NextResponse.json({ error: 'Error al obtener los tickets' }, { status: 500 });

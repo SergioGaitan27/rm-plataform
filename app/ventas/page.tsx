@@ -1,3 +1,5 @@
+// app/ventas/page.tsx
+
 "use client"
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -166,7 +168,7 @@ const SalesPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const newSocket = io('http://localhost:3000'); // Ajusta la URL según tu configuración
+    const newSocket = io('https://www.rmazh.com.mx'); // Ajusta la URL según tu configuración
     setSocket(newSocket);
   
     return () => {
@@ -658,13 +660,16 @@ const SalesPage: React.FC = () => {
 
     const data = await response.json();
     
-    if (socket) {
-      socket.emit('newTicket', {
-        totalProfit: data.ticket.totalProfit,
-        totalAmount: data.ticket.totalAmount,
-        date: new Date()
+    setProducts(prevProducts => {
+      const updatedProducts = [...prevProducts];
+      data.updatedProducts.forEach((updatedProduct: Product) => {
+        const index = updatedProducts.findIndex(p => p._id === updatedProduct._id);
+        if (index !== -1) {
+          updatedProducts[index] = updatedProduct;
+        }
       });
-    }
+      return updatedProducts;
+    });
 
     // Actualizar los productos en el estado local
     setProducts(prevProducts => {
