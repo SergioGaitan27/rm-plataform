@@ -1,7 +1,8 @@
+"use client"
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { DateRange } from 'react-day-picker';
 import { addDays } from 'date-fns';
 import { io, Socket } from 'socket.io-client';
