@@ -1,5 +1,3 @@
-// app/ventas/page.tsx
-
 "use client"
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -15,9 +13,8 @@ import ProductCard from '@/components/ProductCard';
 import { toast } from 'react-hot-toast';
 import ProductInfo from '@/components/ProductInfo';
 import ConectorPluginV3 from '@/app/utils/ConectorPluginV3';
-import { io, Socket } from 'socket.io-client';
-import useSocket from '@/hooks/useSocket';
-
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import Link from 'next/link';
 
 interface CorteResults {
   totalCash: number;
@@ -142,7 +139,6 @@ const SalesPage: React.FC = () => {
     localStorage.setItem('cart', JSON.stringify(cart));
   }, [cart]);
 
-  const socket = useSocket();
 
   const fetchBusinessInfo = useCallback(async () => {
     if (!userLocation) return;
@@ -622,20 +618,20 @@ const SalesPage: React.FC = () => {
     setIsLoading(true);
 
     const ticketData = {
-      items: cart.map(item => ({
-        productId: item._id,
-        productName: item.name,
-        quantity: item.quantity,
-        unitType: item.unitType,
-        pricePerUnit: item.appliedPrice,
-        total: item.appliedPrice * item.quantity * (item.unitType === 'boxes' ? item.piecesPerBox : 1)
-      })),
-      totalAmount: calculateTotal(),
-      paymentType,
-      amountPaid: parseFloat(amountPaid),
-      change,
-      location: userLocation // Asegúrate de que userLocation esté definido y sea correcto
-    };
+    items: cart.map(item => ({
+      productId: item._id,
+      productName: item.name,
+      quantity: item.quantity,
+      unitType: item.unitType,
+      pricePerUnit: item.appliedPrice,
+      total: item.appliedPrice * item.quantity * (item.unitType === 'boxes' ? item.piecesPerBox : 1)
+    })),
+    totalAmount: calculateTotal(),
+    paymentType,
+    amountPaid: parseFloat(amountPaid),
+    change,
+    location: userLocation // Asegúrate de que userLocation esté definido y sea correcto
+  };
 
   try {
     const response = await fetch('/api/tickets', {
@@ -651,23 +647,7 @@ const SalesPage: React.FC = () => {
     }
 
     const data = await response.json();
-
-    // Emitir el evento de nuevo ticket
-    if (socket) {
-      socket.emit('newTicket', data.ticket);
-    }
     
-    setProducts(prevProducts => {
-      const updatedProducts = [...prevProducts];
-      data.updatedProducts.forEach((updatedProduct: Product) => {
-        const index = updatedProducts.findIndex(p => p._id === updatedProduct._id);
-        if (index !== -1) {
-          updatedProducts[index] = updatedProduct;
-        }
-      });
-      return updatedProducts;
-    });
-
     // Actualizar los productos en el estado local
     setProducts(prevProducts => {
       const updatedProducts = [...prevProducts];
@@ -697,12 +677,8 @@ const SalesPage: React.FC = () => {
         searchInputRef.current.focus();
       }
     } catch (error) {
-      console.error('Error al procesar el pago:', error);
-      if (error instanceof Error) {
-        toast.error(`Error al procesar el pago: ${error.message}`);
-      } else {
-        toast.error('Error desconocido al procesar el pago');
-      }
+      console.error('Error al procesar el pago o imprimir:', error);
+      toast.error('Error al procesar el pago o imprimir el ticket');
     } finally {
       setIsLoading(false);
     }
@@ -818,16 +794,6 @@ const SalesPage: React.FC = () => {
     setCorteResults(null);
     setShowCorteConfirmation(false);
   };
-
-  useEffect(() => {
-    return () => {
-      if (socket) {
-        socket.off('connect');
-        socket.off('disconnect');
-        // Agrega aquí cualquier otro evento que puedas estar escuchando
-      }
-    };
-  }, [socket]);
 
   if (status === 'loading') {
     return <div>Cargando...</div>;
@@ -1093,6 +1059,5 @@ const SalesPage: React.FC = () => {
       </div>
   );
 };
-
 
 export default SalesPage;

@@ -3,10 +3,8 @@ import { connectDB } from '@/lib/mongodb';
 import Ticket, { ITicket } from '@/models/Ticket';
 import Product, { IProduct, IStockLocation } from '@/models/Product';
 import mongoose from 'mongoose';
-import { getSocketInstance } from '@/lib/socket';
-import { emitTicketUpdate } from '@/lib/socketHandlers';
 
-// Define a simple type for ticket items
+// Definimos un tipo simple para los items del ticket
 interface SimpleTicketItem {
   productId: mongoose.Types.ObjectId;
   productName: string;
@@ -41,9 +39,9 @@ export async function POST(req: Request) {
   try {
     await connectDB();
     const body: TicketRequestBody = await req.json();
-
+    
     const { items, totalAmount, paymentType, amountPaid, change, location } = body;
-
+    
     const sequenceNumber = await getNextSequenceNumber(location);
     const ticketId = `${location}-${sequenceNumber.toString().padStart(6, '0')}`;
 
@@ -51,7 +49,7 @@ export async function POST(req: Request) {
     const updatedItems: SimpleTicketItem[] = await Promise.all(items.map(async (item) => {
       const product = await Product.findById(item.productId);
       if (!product) {
-        throw new Error(`Product not found: ${item.productId}`);
+        throw new Error(`Producto no encontrado: ${item.productId}`);
       }
 
       const costPerUnit = product.cost;
@@ -87,7 +85,7 @@ export async function POST(req: Request) {
 
     await newTicket.save();
 
-    // Update product stock
+    // Actualizar el stock de los productos
     const updatedProductIds = await Promise.all(updatedItems.map(async (item) => {
       const product = await Product.findById(item.productId);
       if (product) {
@@ -104,64 +102,24 @@ export async function POST(req: Request) {
 
     const updatedProducts = await Product.find({ _id: { $in: updatedProductIds.filter(Boolean) } });
 
-    // Emit new ticket event via Socket.IO
-    const io = getSocketInstance();
-    if (io) {
-      emitTicketUpdate(io, newTicket);
-    }
-
     return NextResponse.json({ 
-      message: 'Ticket saved successfully', 
+      message: 'Ticket guardado exitosamente', 
       ticket: newTicket,
       updatedProducts: updatedProducts
     }, { status: 201 });
   } catch (error) {
-    console.error('Error saving ticket:', error);
-    return NextResponse.json({ error: 'Error saving ticket' }, { status: 500 });
+    console.error('Error al guardar el ticket:', error);
+    return NextResponse.json({ error: 'Error al guardar el ticket' }, { status: 500 });
   }
 }
 
 export async function GET(req: Request) {
   try {
     await connectDB();
-
-    const { searchParams } = new URL(req.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
-    const startDate = searchParams.get('startDate');
-    const endDate = searchParams.get('endDate');
-    const location = searchParams.get('location');
-
-    const query: any = {};
-    if (startDate && endDate) {
-      query.date = {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate)
-      };
-    }
-    if (location) {
-      query.location = location;
-    }
-
-    const skip = (page - 1) * limit;
-
-    const [tickets, total] = await Promise.all([
-      Ticket.find(query)
-        .sort({ date: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean(),
-      Ticket.countDocuments(query)
-    ]);
-
-    return NextResponse.json({
-      tickets,
-      currentPage: page,
-      totalPages: Math.ceil(total / limit),
-      total
-    });
+    const tickets = await Ticket.find({}).sort({ date: -1 });
+    return NextResponse.json(tickets);
   } catch (error) {
-    console.error('Error fetching tickets:', error);
-    return NextResponse.json({ error: 'Error fetching tickets' }, { status: 500 });
+    console.error('Error al obtener los tickets:', error);
+    return NextResponse.json({ error: 'Error al obtener los tickets' }, { status: 500 });
   }
 }
