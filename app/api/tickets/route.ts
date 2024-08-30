@@ -1,13 +1,11 @@
-// app/api/tickets/route.ts
-
 import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import Ticket, { ITicket } from '@/models/Ticket';
 import Product, { IProduct, IStockLocation } from '@/models/Product';
 import mongoose from 'mongoose';
-import { Server as SocketIOServer } from 'socket.io';
+import { getSocketInstance } from '@/lib/socket';
 
-// Definimos un tipo simple para los items del ticket
+// Define a simple type for ticket items
 interface SimpleTicketItem {
   productId: mongoose.Types.ObjectId;
   productName: string;
@@ -38,19 +36,13 @@ async function getNextSequenceNumber(location: string): Promise<number> {
   return lastTicket ? lastTicket.sequenceNumber + 1 : 1;
 }
 
-let io: SocketIOServer;
-
-export function setSocketInstance(socketIo: SocketIOServer) {
-  io = socketIo;
-}
-
 export async function POST(req: Request) {
   try {
     await connectDB();
     const body: TicketRequestBody = await req.json();
-    
+
     const { items, totalAmount, paymentType, amountPaid, change, location } = body;
-    
+
     const sequenceNumber = await getNextSequenceNumber(location);
     const ticketId = `${location}-${sequenceNumber.toString().padStart(6, '0')}`;
 
@@ -58,7 +50,7 @@ export async function POST(req: Request) {
     const updatedItems: SimpleTicketItem[] = await Promise.all(items.map(async (item) => {
       const product = await Product.findById(item.productId);
       if (!product) {
-        throw new Error(`Producto no encontrado: ${item.productId}`);
+        throw new Error(`Product not found: ${item.productId}`);
       }
 
       const costPerUnit = product.cost;
@@ -94,7 +86,7 @@ export async function POST(req: Request) {
 
     await newTicket.save();
 
-    // Actualizar el stock de los productos
+    // Update product stock
     const updatedProductIds = await Promise.all(updatedItems.map(async (item) => {
       const product = await Product.findById(item.productId);
       if (product) {
@@ -111,7 +103,8 @@ export async function POST(req: Request) {
 
     const updatedProducts = await Product.find({ _id: { $in: updatedProductIds.filter(Boolean) } });
 
-    // Emitir evento de nuevo ticket a través de Socket.IO
+    // Emit new ticket event via Socket.IO
+    const io = getSocketInstance();
     if (io) {
       io.emit('newTicket', {
         date: newTicket.date,
@@ -122,20 +115,20 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ 
-      message: 'Ticket guardado exitosamente', 
+      message: 'Ticket saved successfully', 
       ticket: newTicket,
       updatedProducts: updatedProducts
     }, { status: 201 });
   } catch (error) {
-    console.error('Error al guardar el ticket:', error);
-    return NextResponse.json({ error: 'Error al guardar el ticket' }, { status: 500 });
+    console.error('Error saving ticket:', error);
+    return NextResponse.json({ error: 'Error saving ticket' }, { status: 500 });
   }
 }
 
 export async function GET(req: Request) {
   try {
     await connectDB();
-    
+
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
@@ -172,7 +165,7 @@ export async function GET(req: Request) {
       total
     });
   } catch (error) {
-    console.error('Error al obtener los tickets:', error);
-    return NextResponse.json({ error: 'Error al obtener los tickets' }, { status: 500 });
+    console.error('Error fetching tickets:', error);
+    return NextResponse.json({ error: 'Error fetching tickets' }, { status: 500 });
   }
 }

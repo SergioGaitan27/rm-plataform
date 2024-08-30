@@ -6,7 +6,7 @@ import { Server } from 'socket.io';
 import mongoose from 'mongoose';
 import Ticket from '@/models/Ticket';
 import cors from 'cors';
-import { setSocketInstance } from './app/api/tickets/route';
+import { setSocketInstance } from './lib/socket'; // Updated import
 
 const dev = process.env.NODE_ENV !== 'production';
 const app = next({ dev });
@@ -20,14 +20,14 @@ app.prepare().then(() => {
   const expressApp = express();
   const server = createServer(expressApp);
 
-  // Aplicar CORS a todas las rutas HTTP
+  // Apply CORS to all HTTP routes
   expressApp.use(cors({
     origin: process.env.CORS_ORIGIN || "https://www.rmazh.com.mx",
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     credentials: true,
   }));
 
-  // Configuración de Socket.IO
+  // Socket.IO configuration
   const io = new Server(server, {
     cors: {
       origin: process.env.CORS_ORIGIN || "https://www.rmazh.com.mx",
@@ -43,11 +43,11 @@ app.prepare().then(() => {
 
     socket.on('newTicket', async (ticketData) => {
       try {
-        // Guardar el ticket en MongoDB
+        // Save the ticket in MongoDB
         const ticket = new Ticket(ticketData);
         await ticket.save();
 
-        // Emitir actualización a todos los clientes
+        // Emit update to all clients
         io.emit('ticketUpdate', {
           date: new Date(),
           profit: ticket.totalProfit,
@@ -69,7 +69,7 @@ app.prepare().then(() => {
         } else if (timeframe === 'month') {
           startDate.setMonth(startDate.getMonth() - 1);
         } else {
-          startDate.setHours(0, 0, 0, 0); // Inicio del día actual
+          startDate.setHours(0, 0, 0, 0); // Start of the current day
         }
 
         const matchStage: any = { date: { $gte: startDate } };
@@ -102,7 +102,7 @@ app.prepare().then(() => {
     });
   });
 
-  // Manejar todas las solicitudes con Next.js
+  // Handle all requests with Next.js
   expressApp.all('*', (req, res) => {
     return handle(req, res);
   });
