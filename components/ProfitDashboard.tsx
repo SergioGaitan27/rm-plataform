@@ -3,8 +3,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DateRange } from 'react-day-picker';
-import { addDays } from 'date-fns';
 import { io, Socket } from 'socket.io-client';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -16,17 +14,24 @@ interface ProfitData {
 
 const ProfitDashboard: React.FC = () => {
   const [profitData, setProfitData] = useState<ProfitData[]>([]);
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: addDays(new Date(), -7),
-    to: new Date()
-  });
   const [socket, setSocket] = useState<Socket | null>(null);
   const [timeframe, setTimeframe] = useState<string>('week');
   const [location, setLocation] = useState<string>('');
 
   useEffect(() => {
-    const newSocket = io('https://www.rmazh.com.mx');
+    const newSocket = io('https://www.rmazh.com.mx', {
+      path: '/socket.io',
+      transports: ['websocket', 'polling']
+    });
     setSocket(newSocket);
+
+    newSocket.on('connect', () => {
+      console.log('Connected to Socket.IO server');
+    });
+
+    newSocket.on('connect_error', (error) => {
+      console.error('Socket.IO connection error:', error);
+    });
 
     return () => {
       newSocket.disconnect();
@@ -34,8 +39,10 @@ const ProfitDashboard: React.FC = () => {
   }, []);
 
   const fetchInitialData = useCallback(() => {
-    if (socket) {
+    if (socket && socket.connected) {
       socket.emit('requestInitialData', { timeframe, location });
+    } else {
+      console.error('Socket is not connected. Unable to fetch initial data.');
     }
   }, [socket, timeframe, location]);
 
@@ -44,10 +51,12 @@ const ProfitDashboard: React.FC = () => {
       fetchInitialData();
 
       socket.on('initialData', (data: ProfitData[]) => {
+        console.log('Received initial data:', data);
         setProfitData(data);
       });
 
       socket.on('ticketUpdate', (update: { date: string; profit: number; sales: number }) => {
+        console.log('Received ticket update:', update);
         setProfitData(prevData => {
           const updatedData = [...prevData];
           const existingDataIndex = updatedData.findIndex(item => item._id === update.date.split('T')[0]);
