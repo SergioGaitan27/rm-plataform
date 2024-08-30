@@ -1,9 +1,36 @@
 import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
-import Ticket from '@/models/Ticket';
-import Product from '@/models/Product';
+import Ticket, { ITicket } from '@/models/Ticket';
+import Product, { IProduct, IStockLocation } from '@/models/Product';
+import mongoose from 'mongoose';
 
-async function getNextSequenceNumber(location: string) {
+// Definimos un tipo simple para los items del ticket
+interface SimpleTicketItem {
+  productId: mongoose.Types.ObjectId;
+  productName: string;
+  quantity: number;
+  unitType: 'pieces' | 'boxes';
+  pricePerUnit: number;
+  costPerUnit: number;
+  total: number;
+  profit: number;
+}
+
+interface TicketRequestBody {
+  items: {
+    productId: string;
+    pricePerUnit: number;
+    quantity: number;
+    unitType: 'pieces' | 'boxes';
+  }[];
+  totalAmount: number;
+  paymentType: 'cash' | 'card';
+  amountPaid: number;
+  change: number;
+  location: string;
+}
+
+async function getNextSequenceNumber(location: string): Promise<number> {
   const lastTicket = await Ticket.findOne({ location }).sort('-sequenceNumber');
   return lastTicket ? lastTicket.sequenceNumber + 1 : 1;
 }
@@ -11,49 +38,69 @@ async function getNextSequenceNumber(location: string) {
 export async function POST(req: Request) {
   try {
     await connectDB();
-    const body = await req.json();
+    const body: TicketRequestBody = await req.json();
     
-    // Validar y procesar los datos del ticket
     const { items, totalAmount, paymentType, amountPaid, change, location } = body;
     
-    // Obtener el siguiente número de secuencia para esta ubicación
     const sequenceNumber = await getNextSequenceNumber(location);
-    
-    // Crear el ticketId
     const ticketId = `${location}-${sequenceNumber.toString().padStart(6, '0')}`;
 
-    // Crear el nuevo ticket
-    const newTicket = new Ticket({
+    let totalProfit = 0;
+    const updatedItems: SimpleTicketItem[] = await Promise.all(items.map(async (item) => {
+      const product = await Product.findById(item.productId);
+      if (!product) {
+        throw new Error(`Producto no encontrado: ${item.productId}`);
+      }
+
+      const costPerUnit = product.cost;
+      const pricePerUnit = item.pricePerUnit;
+      const quantity = item.unitType === 'boxes' ? item.quantity * product.piecesPerBox : item.quantity;
+      const profit = (pricePerUnit - costPerUnit) * quantity;
+
+      totalProfit += profit;
+
+      return {
+        productId: product._id,
+        productName: product.name,
+        quantity: item.quantity,
+        unitType: item.unitType,
+        pricePerUnit: pricePerUnit,
+        costPerUnit: costPerUnit,
+        total: pricePerUnit * quantity,
+        profit: profit
+      };
+    }));
+
+    const newTicket: ITicket = new Ticket({
       ticketId,
       location,
       sequenceNumber,
-      items,
+      items: updatedItems,
       totalAmount,
+      totalProfit,
       paymentType,
       amountPaid,
       change
     });
 
-    // Guardar el ticket en la base de datos
     await newTicket.save();
 
-    // Actualizar el stock de los productos y recopilar los IDs de los productos actualizados
-    const updatedProductIds: string[] = [];
-    for (const item of items) {
+    // Actualizar el stock de los productos
+    const updatedProductIds = await Promise.all(updatedItems.map(async (item) => {
       const product = await Product.findById(item.productId);
       if (product) {
         const totalPieces = item.unitType === 'boxes' ? item.quantity * product.piecesPerBox : item.quantity;
-        const locationIndex = product.stockLocations.findIndex((loc: { location: string }) => loc.location === location);
+        const locationIndex = product.stockLocations.findIndex((loc: IStockLocation) => loc.location === location);
         if (locationIndex !== -1) {
           product.stockLocations[locationIndex].quantity -= totalPieces;
           await product.save();
-          updatedProductIds.push(product._id.toString());
+          return product._id.toString();
         }
       }
-    }
+      return null;
+    }));
 
-    // Obtener los productos actualizados
-    const updatedProducts = await Product.find({ _id: { $in: updatedProductIds } });
+    const updatedProducts = await Product.find({ _id: { $in: updatedProductIds.filter(Boolean) } });
 
     return NextResponse.json({ 
       message: 'Ticket guardado exitosamente', 

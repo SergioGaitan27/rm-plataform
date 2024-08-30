@@ -535,6 +535,9 @@ const SalesPage: React.FC = () => {
       }
   
       toast.success('Ticket impreso correctamente');
+      if (searchInputRef.current) {
+        searchInputRef.current.focus();
+      }
     } catch (error) {
       console.error('Error al imprimir:', error);
       if (error instanceof Error) {
@@ -670,6 +673,9 @@ const SalesPage: React.FC = () => {
       // Limpiar la información del producto seleccionado
       setProductInfoBottom(null);
       setSearchTermBottom('');
+      if (searchInputRef.current) {
+        searchInputRef.current.focus();
+      }
     } catch (error) {
       console.error('Error al procesar el pago o imprimir:', error);
       toast.error('Error al procesar el pago o imprimir el ticket');

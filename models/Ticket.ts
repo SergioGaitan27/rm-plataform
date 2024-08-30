@@ -6,7 +6,9 @@ export interface ITicketItem extends Document {
   quantity: number;
   unitType: 'pieces' | 'boxes';
   pricePerUnit: number;
+  costPerUnit: number; // Nuevo campo para el costo por unidad
   total: number;
+  profit: number; // Nuevo campo para la ganancia por ítem
 }
 
 export interface ITicket extends Document {
@@ -15,6 +17,7 @@ export interface ITicket extends Document {
   sequenceNumber: number;
   items: ITicketItem[];
   totalAmount: number;
+  totalProfit: number; // Nuevo campo para la ganancia total
   paymentType: 'cash' | 'card';
   amountPaid: number;
   change: number;
@@ -27,7 +30,9 @@ const TicketItemSchema: Schema = new Schema({
   quantity: { type: Number, required: true },
   unitType: { type: String, enum: ['pieces', 'boxes'], required: true },
   pricePerUnit: { type: Number, required: true },
-  total: { type: Number, required: true }
+  costPerUnit: { type: Number, required: true }, // Nuevo campo
+  total: { type: Number, required: true },
+  profit: { type: Number, required: true } // Nuevo campo
 });
 
 const TicketSchema: Schema = new Schema({
@@ -36,6 +41,7 @@ const TicketSchema: Schema = new Schema({
   sequenceNumber: { type: Number, required: true },
   items: [TicketItemSchema],
   totalAmount: { type: Number, required: true },
+  totalProfit: { type: Number, required: true }, // Nuevo campo
   paymentType: { type: String, enum: ['cash', 'card'], required: true },
   amountPaid: { type: Number, required: true },
   change: { type: Number, required: true },
