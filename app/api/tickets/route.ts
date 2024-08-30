@@ -112,16 +112,10 @@ export async function POST(req: Request) {
     const updatedProducts = await Product.find({ _id: { $in: updatedProductIds.filter(Boolean) } });
 
     // Trigger Pusher event with profit information
-    try {
-      await pusher.trigger('sales-channel', 'new-sale', {
-        profit: totalProfit,
-        timestamp: new Date().toISOString()
-      });
-    } catch (pusherError) {
-      console.error('Error al enviar evento Pusher:', pusherError);
-      // Decide si quieres manejar este error de una manera específica
-      // Por ahora, continuamos con la ejecución
-    }
+    await pusher.trigger('sales-channel', 'new-sale', {
+      profit: totalProfit,
+      timestamp: new Date().toISOString()
+    });
 
     return NextResponse.json({ 
       message: 'Ticket guardado exitosamente', 
@@ -130,11 +124,7 @@ export async function POST(req: Request) {
     }, { status: 201 });
   } catch (error) {
     console.error('Error al guardar el ticket:', error);
-    // Agregar más detalles al error para ayudar en la depuración
-    return NextResponse.json({ 
-      error: 'Error al guardar el ticket', 
-      details: error instanceof Error ? error.message : String(error)
-    }, { status: 500 });
+    return NextResponse.json({ error: 'Error al guardar el ticket' }, { status: 500 });
   }
 }
 
