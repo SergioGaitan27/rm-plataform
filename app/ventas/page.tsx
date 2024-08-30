@@ -944,7 +944,7 @@ const SalesPage: React.FC = () => {
                 <Label htmlFor="card">Tarjeta</Label>
               </div>
             </RadioGroup>
-            
+            <p className="font-bold text-lg">Total a pagar: ${calculateTotal().toFixed(2)}</p>
             {paymentType === 'cash' && (
               <div>
                 <Label htmlFor="amountPaid">Monto pagado:</Label>
@@ -962,7 +962,7 @@ const SalesPage: React.FC = () => {
                 </p>
               </div>
             )}
-            <p className="font-bold">Total a pagar: ${calculateTotal().toFixed(2)}</p>
+            
           </div>
           <DialogFooter>
             <Button onClick={handleClosePaymentModal} variant="outline" disabled={isLoading}>Cancelar</Button>
