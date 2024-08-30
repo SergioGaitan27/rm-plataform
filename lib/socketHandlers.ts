@@ -1,3 +1,5 @@
+// lib/socketHandlers.ts
+
 import { Server as SocketIOServer, Socket } from 'socket.io';
 import Ticket from '@/models/Ticket';
 

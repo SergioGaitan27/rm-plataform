@@ -1,3 +1,5 @@
+// lib/socket.ts
+
 import { Server as SocketIOServer } from 'socket.io';
 
 let io: SocketIOServer | null = null;
