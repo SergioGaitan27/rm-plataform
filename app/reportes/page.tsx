@@ -1,5 +1,3 @@
-'use client'
-
 import React, { useState, useEffect } from 'react';
 import pusher from '@/lib/pusher';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +8,26 @@ export default function RealTimeProfitPage() {
   const [saleCount, setSaleCount] = useState(0);
 
   useEffect(() => {
+    // Función para cargar las ventas del día al iniciar la página
+    const fetchSales = async () => {
+      try {
+        const today = new Date().toISOString().split('T')[0];
+        const response = await fetch(`/api/tickets?startDate=${today}&endDate=${today}`);
+        const data = await response.json();
+
+        if (data.totalProfit && data.saleCount) {
+          setTotalProfit(data.totalProfit);
+          setSaleCount(data.saleCount);
+        }
+      } catch (error) {
+        console.error('Error fetching sales:', error);
+      }
+    };
+
+    // Llamada inicial para cargar los datos del día
+    fetchSales();
+
+    // Suscripción a Pusher para ventas en tiempo real
     const channel = pusher.subscribe('sales-channel');
     channel.bind('new-sale', (data: { profit: number; timestamp: string }) => {
       setLastSale(data);
@@ -17,6 +35,7 @@ export default function RealTimeProfitPage() {
       setSaleCount(prevCount => prevCount + 1);
     });
 
+    // Limpiar la suscripción cuando el componente se desmonte
     return () => {
       pusher.unsubscribe('sales-channel');
     };

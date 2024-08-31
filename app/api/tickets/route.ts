@@ -128,11 +128,39 @@ export async function POST(req: Request) {
   }
 }
 
+
 export async function GET(req: Request) {
   try {
     await connectDB();
-    const tickets = await Ticket.find({}).sort({ date: -1 });
-    return NextResponse.json(tickets);
+    const url = new URL(req.url);
+    const location = url.searchParams.get('location');
+    const startDateStr = url.searchParams.get('startDate');
+    const endDateStr = url.searchParams.get('endDate');
+
+    const startDate = startDateStr ? new Date(startDateStr) : new Date();
+    const endDate = endDateStr ? new Date(endDateStr) : new Date();
+    startDate.setHours(0, 0, 0, 0); // Inicio del día
+    endDate.setHours(23, 59, 59, 999); // Fin del día
+
+    const query: any = {
+      date: { $gte: startDate, $lte: endDate },
+    };
+
+    if (location) {
+      query.location = location;
+    }
+
+    const tickets = await Ticket.find(query).sort({ date: -1 });
+
+    // Calcular el beneficio total y el conteo de ventas
+    const totalProfit = tickets.reduce((sum, ticket) => sum + ticket.totalProfit, 0);
+    const saleCount = tickets.length;
+
+    return NextResponse.json({
+      tickets,
+      totalProfit,
+      saleCount,
+    });
   } catch (error) {
     console.error('Error al obtener los tickets:', error);
     return NextResponse.json({ error: 'Error al obtener los tickets' }, { status: 500 });
