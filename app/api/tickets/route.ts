@@ -128,12 +128,10 @@ export async function POST(req: Request) {
   }
 }
 
-
 export async function GET(req: Request) {
   try {
     await connectDB();
     const url = new URL(req.url);
-    const location = url.searchParams.get('location');
     const startDateStr = url.searchParams.get('startDate');
     const endDateStr = url.searchParams.get('endDate');
 
@@ -146,20 +144,24 @@ export async function GET(req: Request) {
       date: { $gte: startDate, $lte: endDate },
     };
 
-    if (location) {
-      query.location = location;
-    }
-
     const tickets = await Ticket.find(query).sort({ date: -1 });
 
-    // Calcular el beneficio total y el conteo de ventas
-    const totalProfit = tickets.reduce((sum, ticket) => sum + ticket.totalProfit, 0);
-    const saleCount = tickets.length;
+    // Calcular el beneficio total, conteo de ventas, y agrupar por ubicación
+    const locationProfits: Record<string, number> = {};
+    let totalProfit = 0;
+    tickets.forEach(ticket => {
+      totalProfit += ticket.totalProfit;
+      locationProfits[ticket.location] = (locationProfits[ticket.location] || 0) + ticket.totalProfit;
+    });
+
+    const locations = Object.keys(locationProfits).map(location => ({
+      location,
+      profit: locationProfits[location],
+    }));
 
     return NextResponse.json({
-      tickets,
       totalProfit,
-      saleCount,
+      locations,
     });
   } catch (error) {
     console.error('Error al obtener los tickets:', error);
